@@ -25,7 +25,7 @@
 - **数学公式**:
   - 编辑：MathLive
   - 渲染：KaTeX
-- **Markdown渲染**: markdown-it + markdown-it-katex
+- **Markdown渲染**: markdown-it + markdown-it-texmath
 - **代码高亮**: highlight.js
 - **状态管理**: Composition API + Composables
 - **数据存储**: localStorage
