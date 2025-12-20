@@ -108,7 +108,7 @@ const enterEditMode = async () => {
     // 创建 MathLive 实例
     mathfieldInstance = new MathfieldElement({
       defaultMode: 'math',
-      virtualKeyboardMode: 'manual', // 手动控制虚拟键盘
+      mathVirtualKeyboardPolicy: 'manual', // 手动控制虚拟键盘
     })
 
     // 设置初始值
@@ -119,6 +119,11 @@ const enterEditMode = async () => {
 
     // 自动聚焦
     mathfieldInstance.focus()
+
+    // 显示虚拟键盘
+    if (window.mathVirtualKeyboard) {
+      window.mathVirtualKeyboard.show()
+    }
 
     // 监听失焦事件（支持桌面端和移动端）
     mathfieldInstance.addEventListener('blur', handleBlur)
@@ -166,6 +171,11 @@ const exitEditMode = () => {
   if (blurTimeout) {
     clearTimeout(blurTimeout)
     blurTimeout = null
+  }
+
+  // 隐藏虚拟键盘
+  if (window.mathVirtualKeyboard) {
+    window.mathVirtualKeyboard.hide()
   }
 
   // 清理虚拟键盘监听器
