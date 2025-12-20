@@ -44,8 +44,8 @@ export function useMarkdownRenderer() {
   // 定义预处理函数
   const normalizeMath = (str) => {
     if (!str) return ''
-    // 将 \[ 和 \] 替换为 $$
-    return str.replace(/\\\[|\\\]/g, () => '$$')
+    // 将 \[ ... \] 成对替换为 $$ ... $$（块级公式）
+    return str.replace(/\\\[([\s\S]*?)\\\]/g, (match, content) => `$$${content}$$`)
   }
 
   // 渲染Markdown为HTML
