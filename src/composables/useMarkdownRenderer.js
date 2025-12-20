@@ -34,18 +34,28 @@ export function useMarkdownRenderer() {
   // 使用texmath插件渲染数学公式
   md.use(texmath, {
     engine: katex,
-    delimiters: 'dollars', // 使用 $ 和 $$ 作为分隔符
+    delimiters: ['dollars', 'brackets'],
     katexOptions: {
       throwOnError: false,
-      errorColor: '#cc0000'
+      errorColor: '#cc0000',
     }
   })
+
+  // 定义预处理函数
+  const normalizeMath = (str) => {
+    if (!str) return ''
+    // 将 \[ 和 \] 替换为 $$
+    return str.replace(/\\\[|\\\]/g, () => '$$')
+  }
 
   // 渲染Markdown为HTML
   const render = (markdown) => {
     if (!markdown) return ''
     try {
-      return md.render(markdown)
+      // 1. 先进行预处理替换
+      const normalizedMarkdown = normalizeMath(markdown)
+      // 2. 再进行 Markdown 渲染
+      return md.render(normalizedMarkdown)
     } catch (error) {
       console.error('Markdown渲染失败:', error)
       return `<p style="color: red;">渲染失败: ${error.message}</p>`
