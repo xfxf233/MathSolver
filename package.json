@@ -15,7 +15,10 @@
     "@tiptap/pm": "^3.14.0",
     "@tiptap/starter-kit": "^3.14.0",
     "@tiptap/vue-3": "^3.14.0",
+    "highlight.js": "^11.11.1",
     "katex": "^0.16.27",
+    "markdown-it": "^14.1.0",
+    "markdown-it-texmath": "^1.0.0",
     "marked": "^17.0.1",
     "mathlive": "^0.108.2",
     "vue": "^3.5.25"
