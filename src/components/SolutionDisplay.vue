@@ -1,3 +1,9 @@
+<!--
+  @deprecated This component is deprecated and replaced by MessageBubble.vue
+  The new conversation system displays messages in chat bubbles instead of a single solution display.
+  This file is kept for reference only and should not be imported.
+-->
+
 <script setup>
 import { computed, watch, nextTick, ref } from 'vue'
 import { useMarkdownRenderer } from '../composables/useMarkdownRenderer'

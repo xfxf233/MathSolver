@@ -1,16 +1,14 @@
-<!--
-  @deprecated This component is deprecated and replaced by ConversationList.vue
-  The new conversation system supports multi-turn conversations instead of single Q&A history.
-  This file is kept for reference only and should not be imported.
--->
-
 <script setup>
 import { computed } from 'vue'
 
 const props = defineProps({
-  history: {
+  conversations: {
     type: Array,
     default: () => []
+  },
+  activeId: {
+    type: String,
+    default: null
   }
 })
 
@@ -51,14 +49,13 @@ const formatTime = (timestamp) => {
   })
 }
 
-// 截取题目预览
-const getQuestionPreview = (question) => {
-  const text = question.replace(/<[^>]*>/g, '').replace(/\$[^$]*\$/g, '[公式]')
-  return text.length > 50 ? text.slice(0, 50) + '...' : text
-}
+// 按更新时间排序（最新的在前）
+const sortedConversations = computed(() => {
+  return [...props.conversations].sort((a, b) => b.updatedAt - a.updatedAt)
+})
 
-const handleSelect = (item) => {
-  emit('select', item)
+const handleSelect = (id) => {
+  emit('select', id)
 }
 
 const handleDelete = (id, event) => {
@@ -67,16 +64,16 @@ const handleDelete = (id, event) => {
 }
 
 const handleClear = () => {
-  if (confirm('确定要清空所有历史记录吗？')) {
+  if (confirm('确定要清空所有对话吗？')) {
     emit('clear')
   }
 }
 </script>
 
 <template>
-  <div class="history-panel">
-    <div class="history-header">
-      <h3>历史记录</h3>
+  <div class="conversation-list">
+    <div class="list-header">
+      <h3>对话列表</h3>
       <button class="close-button" @click="$emit('close')" title="关闭">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -85,38 +82,38 @@ const handleClear = () => {
       </button>
     </div>
 
-    <div v-if="history.length === 0" class="empty-state">
+    <div v-if="conversations.length === 0" class="empty-state">
       <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="10"></circle>
-        <polyline points="12 6 12 12 16 14"></polyline>
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
       </svg>
-      <p>暂无历史记录</p>
+      <p>暂无对话</p>
     </div>
 
-    <div v-else class="history-content">
-      <div class="history-actions">
+    <div v-else class="list-content">
+      <div class="list-actions">
         <button class="clear-button" @click="handleClear">
-          清空记录
+          清空所有对话
         </button>
       </div>
 
-      <div class="history-list">
+      <div class="conversation-items">
         <div
-          v-for="item in history"
-          :key="item.id"
-          class="history-item"
-          @click="handleSelect(item)"
+          v-for="conv in sortedConversations"
+          :key="conv.id"
+          class="conversation-item"
+          :class="{ active: conv.id === activeId }"
+          @click="handleSelect(conv.id)"
         >
           <div class="item-content">
-            <div class="item-question">{{ getQuestionPreview(item.question) }}</div>
+            <div class="item-title">{{ conv.title }}</div>
             <div class="item-meta">
-              <span class="item-time">{{ formatTime(item.timestamp) }}</span>
-              <span class="item-model">{{ item.model }}</span>
+              <span class="item-time">{{ formatTime(conv.updatedAt) }}</span>
+              <span class="item-count">{{ conv.messages.length }} 条消息</span>
             </div>
           </div>
           <button
             class="delete-button"
-            @click="handleDelete(item.id, $event)"
+            @click="handleDelete(conv.id, $event)"
             title="删除"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -131,7 +128,7 @@ const handleClear = () => {
 </template>
 
 <style scoped>
-.history-panel {
+.conversation-list {
   position: fixed;
   top: 0;
   right: 0;
@@ -154,7 +151,7 @@ const handleClear = () => {
   }
 }
 
-.history-header {
+.list-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -162,7 +159,7 @@ const handleClear = () => {
   border-bottom: 1px solid #e5e7eb;
 }
 
-.history-header h3 {
+.list-header h3 {
   margin: 0;
   font-size: 18px;
   font-weight: 600;
@@ -208,14 +205,14 @@ const handleClear = () => {
   font-size: 14px;
 }
 
-.history-content {
+.list-content {
   flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
-.history-actions {
+.list-actions {
   padding: 12px 20px;
   border-bottom: 1px solid #e5e7eb;
 }
@@ -238,13 +235,13 @@ const handleClear = () => {
   color: #dc2626;
 }
 
-.history-list {
+.conversation-items {
   flex: 1;
   overflow-y: auto;
   padding: 8px;
 }
 
-.history-item {
+.conversation-item {
   display: flex;
   align-items: flex-start;
   gap: 8px;
@@ -254,10 +251,16 @@ const handleClear = () => {
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s;
+  border: 2px solid transparent;
 }
 
-.history-item:hover {
+.conversation-item:hover {
   background: #f3f4f6;
+}
+
+.conversation-item.active {
+  background: #eff6ff;
+  border-color: #4a90e2;
 }
 
 .item-content {
@@ -265,13 +268,19 @@ const handleClear = () => {
   min-width: 0;
 }
 
-.item-question {
+.item-title {
   font-size: 14px;
   color: #1f2937;
   margin-bottom: 6px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-weight: 500;
+}
+
+.conversation-item.active .item-title {
+  color: #4a90e2;
+  font-weight: 600;
 }
 
 .item-meta {
@@ -282,11 +291,16 @@ const handleClear = () => {
   color: #9ca3af;
 }
 
-.item-model {
+.item-count {
   padding: 2px 6px;
   background: #e5e7eb;
   border-radius: 3px;
   font-size: 11px;
+}
+
+.conversation-item.active .item-count {
+  background: #dbeafe;
+  color: #4a90e2;
 }
 
 .delete-button {
@@ -311,7 +325,7 @@ const handleClear = () => {
 }
 
 @media (max-width: 768px) {
-  .history-panel {
+  .conversation-list {
     width: 100%;
   }
 }

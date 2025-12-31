@@ -1,8 +1,18 @@
 <script setup>
-import { ref, onBeforeUnmount } from 'vue'
+import { ref, computed, onBeforeUnmount } from 'vue'
 import { useEditor, EditorContent } from '@tiptap/vue-3'
 import StarterKit from '@tiptap/starter-kit'
 import { MathNode } from '../extensions/MathNode'
+import { extractQuestionFromEditor, isEditorEmpty } from '../utils/contentExtractor'
+
+const props = defineProps({
+  disabled: {
+    type: Boolean,
+    default: false
+  }
+})
+
+const emit = defineEmits(['send'])
 
 const editor = useEditor({
   extensions: [
@@ -17,9 +27,28 @@ const editor = useEditor({
   },
 })
 
+const isEmpty = computed(() => {
+  return editor.value ? isEditorEmpty(editor.value) : true
+})
+
 const insertMath = () => {
   if (editor.value) {
     editor.value.chain().focus().insertMathNode().run()
+  }
+}
+
+const handleSend = () => {
+  if (!editor.value || isEmpty.value || props.disabled) return
+
+  const content = extractQuestionFromEditor(editor.value)
+  if (content) {
+    emit('send', content)
+  }
+}
+
+const clearContent = () => {
+  if (editor.value) {
+    editor.value.commands.setContent('<p></p>')
   }
 }
 
@@ -30,7 +59,7 @@ onBeforeUnmount(() => {
 })
 
 defineExpose({
-  editor,
+  clearContent
 })
 </script>
 
@@ -40,10 +69,25 @@ defineExpose({
       <button
         class="toolbar-button"
         @click="insertMath"
+        :disabled="disabled"
         title="插入公式"
       >
         <span class="icon">ƒₓ</span>
         插入公式
+      </button>
+
+      <!-- Send button -->
+      <button
+        class="toolbar-button send-button"
+        @click="handleSend"
+        :disabled="disabled || isEmpty"
+        title="发送"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="22" y1="2" x2="11" y2="13"></line>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+        </svg>
+        发送
       </button>
     </div>
     <EditorContent :editor="editor" class="editor-content" />
@@ -83,19 +127,42 @@ defineExpose({
   transition: all 0.2s;
 }
 
-.toolbar-button:hover {
+.toolbar-button:hover:not(:disabled) {
   background: #f3f4f6;
   border-color: #9ca3af;
 }
 
-.toolbar-button:active {
+.toolbar-button:active:not(:disabled) {
   transform: scale(0.98);
+}
+
+.toolbar-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .icon {
   font-size: 18px;
   font-weight: bold;
   color: #4a90e2;
+}
+
+.send-button {
+  margin-left: auto;
+  background: #4a90e2;
+  color: white;
+  border-color: #4a90e2;
+  font-weight: 500;
+}
+
+.send-button:hover:not(:disabled) {
+  background: #3b7dd6;
+  border-color: #3b7dd6;
+}
+
+.send-button:disabled {
+  background: #9ca3af;
+  border-color: #9ca3af;
 }
 
 .editor-content {

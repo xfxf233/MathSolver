@@ -1,13 +1,43 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import AppHeader from './components/AppHeader.vue'
 import MainLayout from './components/MainLayout.vue'
 import MathEditor from './components/MathEditor.vue'
-import AISolutionPanel from './components/AISolutionPanel.vue'
+import ConversationPanel from './components/ConversationPanel.vue'
 import ApiSettingsDialog from './components/ApiSettingsDialog.vue'
+import { useConversations } from './composables/useConversations'
+import { useAISolver } from './composables/useAISolver'
+import { useApiConfig } from './composables/useApiConfig'
 
 const showSettings = ref(false)
 const editorRef = ref(null)
+
+const { config, isConfigValid } = useApiConfig()
+const { activeConversationId, createConversation } = useConversations()
+const { isSolving, solve } = useAISolver(config)
+
+// Ensure there's always an active conversation
+onMounted(() => {
+  if (!activeConversationId.value) {
+    createConversation()
+  }
+})
+
+const handleSend = async (content) => {
+  if (!isConfigValid()) {
+    alert('请先配置API设置')
+    showSettings.value = true
+    return
+  }
+
+  // Solve with conversation context
+  await solve(content)
+
+  // Clear editor after successful send
+  if (editorRef.value) {
+    editorRef.value.clearContent()
+  }
+}
 
 const openSettings = () => {
   showSettings.value = true
@@ -26,10 +56,14 @@ const closeSettings = () => {
       <template #left>
         <div class="panel-wrapper">
           <div class="panel-header">
-            <h2 class="panel-title">题目输入</h2>
+            <h2 class="panel-title">输入消息</h2>
           </div>
           <div class="panel-content">
-            <MathEditor ref="editorRef" />
+            <MathEditor
+              ref="editorRef"
+              :disabled="isSolving"
+              @send="handleSend"
+            />
           </div>
         </div>
       </template>
@@ -37,10 +71,10 @@ const closeSettings = () => {
       <template #right>
         <div class="panel-wrapper">
           <div class="panel-header">
-            <h2 class="panel-title">AI解答</h2>
+            <h2 class="panel-title">对话</h2>
           </div>
           <div class="panel-content">
-            <AISolutionPanel :editorRef="editorRef" />
+            <ConversationPanel />
           </div>
         </div>
       </template>

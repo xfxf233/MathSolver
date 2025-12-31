@@ -1,14 +1,24 @@
 import { ref } from 'vue'
 import { AIService } from '../services/apiService'
+import { useConversations } from './useConversations'
 
 export function useAISolver(config) {
   const isSolving = ref(false)
-  const currentAnswer = ref('')
-  const currentQuestion = ref('')
   const error = ref(null)
+  const currentStreamingMessageId = ref(null)
+
+  const {
+    activeConversation,
+    addUserMessage,
+    addAssistantMessage,
+    updateAssistantMessage,
+    deleteMessage,
+    saveCurrentConversation,
+    updateConversationModel
+  } = useConversations()
 
   /**
-   * 求解数学问题
+   * 求解数学问题（支持多轮对话）
    * @param {string} question - 数学问题
    * @returns {Promise<string>} - 完整的解答
    */
@@ -23,26 +33,60 @@ export function useAISolver(config) {
       return ''
     }
 
+    if (!activeConversation.value) {
+      error.value = '没有活动对话'
+      return ''
+    }
+
     isSolving.value = true
     error.value = null
-    currentAnswer.value = ''
-    currentQuestion.value = question
 
     try {
-      const service = new AIService(config.value)
-      const generator = service.solveMath(question)
+      // Add user message to conversation
+      addUserMessage(question)
 
+      // Create empty assistant message for streaming
+      const assistantMessageId = addAssistantMessage('')
+      currentStreamingMessageId.value = assistantMessageId
+
+      // Build messages array for API (exclude the empty assistant message)
+      const messages = activeConversation.value.messages
+        .filter(m => m.id !== assistantMessageId)
+        .map(m => ({
+          role: m.role,
+          content: m.content
+        }))
+
+      // Update conversation model if not set
+      updateConversationModel(config.value.model)
+
+      // Stream response
+      const service = new AIService(config.value)
+      const generator = service.solveMath(messages)
+
+      let fullAnswer = ''
       for await (const chunk of generator) {
-        currentAnswer.value += chunk
+        fullAnswer += chunk
+        updateAssistantMessage(assistantMessageId, fullAnswer)
       }
 
-      return currentAnswer.value
+      // Save conversation after streaming completes
+      saveCurrentConversation()
+
+      return fullAnswer
     } catch (err) {
       console.error('AI求解失败:', err)
       error.value = parseError(err)
+
+      // Delete the incomplete assistant message on error
+      if (currentStreamingMessageId.value) {
+        deleteMessage(currentStreamingMessageId.value)
+      }
+
       return ''
     } finally {
       isSolving.value = false
+      currentStreamingMessageId.value = null
     }
   }
 
@@ -51,15 +95,10 @@ export function useAISolver(config) {
    */
   const stop = () => {
     isSolving.value = false
-  }
-
-  /**
-   * 清空当前解答
-   */
-  const clear = () => {
-    currentAnswer.value = ''
-    currentQuestion.value = ''
-    error.value = null
+    // Keep partial message - don't delete it
+    if (currentStreamingMessageId.value) {
+      saveCurrentConversation()
+    }
   }
 
   /**
@@ -87,11 +126,8 @@ export function useAISolver(config) {
 
   return {
     isSolving,
-    currentAnswer,
-    currentQuestion,
     error,
     solve,
-    stop,
-    clear
+    stop
   }
 }

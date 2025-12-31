@@ -1,3 +1,9 @@
+<!--
+  @deprecated This component is deprecated and replaced by ConversationPanel.vue
+  The new conversation system supports multi-turn conversations with chat-style interface.
+  This file is kept for reference only and should not be imported.
+-->
+
 <script setup>
 import { ref, computed } from 'vue'
 import { useApiConfig } from '../composables/useApiConfig'

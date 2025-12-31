@@ -5,10 +5,10 @@ export class AIService {
 
   /**
    * 调用AI求解数学问题（流式输出）
-   * @param {string} question - 数学问题
+   * @param {Array<{role: string, content: string}>} messages - 对话消息数组
    * @returns {AsyncGenerator<string>} - 流式返回的内容片段
    */
-  async *solveMath(question) {
+  async *solveMath(messages) {
     const response = await fetch(this.config.endpoint, {
       method: 'POST',
       headers: {
@@ -20,12 +20,9 @@ export class AIService {
         messages: [
           {
             role: 'system',
-            content: '你是一个数学解题助手。请用Markdown格式回答，数学公式使用LaTeX语法，行内公式用$...$，块级公式用$$...$$。请分步骤详细解答，确保逻辑清晰。'
+            content: '你是一个数学解题助手。请用Markdown格式回答，数学公式使用LaTeX语法，行内公式用$...$，块级公式用$$...$$。请分步骤详细解答，确保逻辑清晰。在多轮对话中，请记住之前的上下文。'
           },
-          {
-            role: 'user',
-            content: question
-          }
+          ...messages
         ],
         stream: true,
         temperature: this.config.temperature,

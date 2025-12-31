@@ -1,3 +1,9 @@
+/**
+ * @deprecated This file is deprecated and replaced by useConversations.js
+ * The new conversation system supports multi-turn conversations instead of single Q&A pairs.
+ * This file is kept for reference only and should not be imported.
+ */
+
 import { ref } from 'vue'
 
 const HISTORY_KEY = 'mathsolver_history'
