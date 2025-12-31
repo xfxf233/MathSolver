@@ -6,10 +6,8 @@
     </div>
 
     <div class="message-content">
-      <!-- User message: plain text + LaTeX -->
-      <div v-if="isUser" class="user-content">
-        {{ message.content }}
-      </div>
+      <!-- User message: rendered LaTeX -->
+      <div v-if="isUser" class="user-content markdown-content" v-html="renderedContent"></div>
 
       <!-- Assistant message: rendered Markdown -->
       <div v-else class="assistant-content markdown-content" v-html="renderedContent"></div>
@@ -50,7 +48,6 @@ const { render } = useMarkdownRenderer()
 const isUser = computed(() => props.message.role === 'user')
 
 const renderedContent = computed(() => {
-  if (isUser.value) return ''
   return render(props.message.content)
 })
 
@@ -129,7 +126,17 @@ const formatTime = (timestamp) => {
 }
 
 .user-content {
-  white-space: pre-wrap;
+  color: white;
+}
+
+/* User message specific styles for better readability on blue background */
+.message-bubble.user .markdown-content :deep(code) {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.message-bubble.user .markdown-content :deep(.katex) {
+  color: white;
 }
 
 .message-actions {
