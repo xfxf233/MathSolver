@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-MathSolver is a Vue 3 application that provides an AI-powered math problem solver with a rich text editor for inputting mathematical expressions. The app features a split-panel interface where users can input math problems on the left and receive AI-generated solutions on the right.
+MathSolver is a Vue 3 application that provides an AI-powered math problem solver with multi-turn conversation support. The app features a split-panel interface with a rich text editor on the left for inputting mathematical expressions and a chat-style conversation panel on the right for interacting with AI. Users can have continuous conversations with context awareness, switch between multiple conversation threads, and manage their conversation history.
 
 ## Development Commands
 
@@ -38,19 +38,24 @@ npm run preview
 The app follows a component-based architecture with composables for shared logic:
 
 **Main Layout Flow:**
-- `App.vue` → Root component managing settings dialog and layout
+- `App.vue` → Root component managing settings dialog, conversation initialization, and send handling
 - `MainLayout.vue` → Responsive split-panel layout (desktop: side-by-side, mobile: stacked)
-- `MathEditor.vue` → Left panel with TipTap editor for problem input
-- `AISolutionPanel.vue` → Right panel displaying AI solutions and history
+- `MathEditor.vue` → Left panel with TipTap editor and send button for message input
+- `ConversationPanel.vue` → Right panel displaying chat-style conversation interface
 
 **Key Components:**
-- `MathEditor.vue` - TipTap editor with custom MathNode extension for inline LaTeX
+- `MathEditor.vue` - TipTap editor with custom MathNode extension for inline LaTeX, includes send button
 - `MathNodeView.vue` - Vue component rendering MathLive widgets within the editor
-- `AISolutionPanel.vue` - Manages AI solving, displays solutions, and shows history
-- `SolutionDisplay.vue` - Renders markdown solutions with LaTeX math
-- `HistoryPanel.vue` - Displays and manages solution history
+- `ConversationPanel.vue` - Main chat interface managing conversation display, new conversation creation, and conversation list
+- `MessageBubble.vue` - Individual message display component with copy/delete actions
+- `ConversationList.vue` - Sidebar for viewing and switching between conversations
 - `ApiSettingsDialog.vue` - Configuration dialog for API settings
 - `ResizeDivider.vue` - Draggable divider for adjusting panel widths
+
+**Deprecated Components (kept for reference):**
+- `AISolutionPanel.vue` - Replaced by ConversationPanel.vue
+- `SolutionDisplay.vue` - Replaced by MessageBubble.vue
+- `HistoryPanel.vue` - Replaced by ConversationList.vue
 
 ### Composables (Shared Logic)
 
@@ -60,16 +65,28 @@ The app follows a component-based architecture with composables for shared logic
 - Default endpoint: `https://api.openai.com/v1/chat/completions`
 - Default model: `gpt-4o-mini`
 
-**`useAISolver.js`** - AI problem solving logic
-- Wraps `AIService` class for streaming responses
-- Manages solving state (isSolving, currentAnswer, currentQuestion, error)
-- Provides `solve()`, `stop()`, and `clear()` methods
-- Includes error parsing for common API errors (401, 429, 500, timeout, network)
+**`useConversations.js`** - Conversation state management (singleton)
+- Manages all conversation threads and active conversation state
+- Stores up to 50 conversations in localStorage under key `mathsolver_conversations`
+- Each conversation contains: id, title, messages array, model, createdAt, updatedAt
+- Each message contains: id, role (user/assistant), content, timestamp
+- Provides CRUD operations: createConversation, deleteConversation, setActiveConversation
+- Message operations: addUserMessage, addAssistantMessage, updateAssistantMessage, deleteMessage
+- Auto-generates conversation titles from first user message
+- Clears old `mathsolver_history` data on first load
 
-**`useHistory.js`** - Solution history management
-- Stores up to 50 history items in localStorage under key `mathsolver_history`
-- Each item contains: id, question, answer, model, timestamp
-- Provides CRUD operations: addHistory, deleteHistory, clearHistory, getHistoryById
+**`useAISolver.js`** - AI problem solving logic with conversation integration
+- Integrates with `useConversations` for multi-turn conversation support
+- Manages solving state (isSolving, error)
+- Provides `solve()` and `stop()` methods
+- Sends full conversation history to API for context-aware responses
+- Handles streaming responses by updating assistant messages in real-time
+- Includes error parsing for common API errors (401, 429, 500, timeout, network)
+- Automatically saves conversation state after streaming completes
+
+**`useHistory.js`** - DEPRECATED (replaced by useConversations.js)
+- Old single Q&A history system
+- Kept for reference only
 
 **`useMarkdownRenderer.js`** - Markdown and LaTeX rendering
 - Configures markdown-it with texmath plugin for KaTeX rendering
@@ -81,10 +98,10 @@ The app follows a component-based architecture with composables for shared logic
 
 **`apiService.js`** - AIService class
 - Handles streaming API requests to OpenAI-compatible endpoints
-- `solveMath(question)` - Async generator yielding content chunks
+- `solveMath(messages)` - Async generator accepting full message history array, yielding content chunks
 - `testConnection()` - Validates API configuration
 - Parses SSE (Server-Sent Events) format responses
-- System prompt instructs AI to use Markdown with LaTeX math syntax
+- System prompt instructs AI to use Markdown with LaTeX math syntax and remember conversation context
 
 ### Custom TipTap Extension
 
@@ -105,15 +122,17 @@ The app follows a component-based architecture with composables for shared logic
 
 The app uses Vue 3's Composition API with singleton composables for shared state:
 - API configuration is shared across all components via `useApiConfig()`
-- History is shared via `useHistory()`
-- Each component instance of `useAISolver()` gets its own solving state
+- Conversation state is shared via `useConversations()` (singleton pattern)
+- AI solving state is managed via `useAISolver()` which integrates with conversations
+- All conversation data persists automatically to localStorage
 
 ### Data Persistence
 
 All data is stored in browser localStorage:
 - `mathsolver_api_config` - API settings
-- `mathsolver_history` - Solution history (max 50 items)
-- `mathsolver_layout_width` - User's preferred panel width percentage
+- `mathsolver_conversations` - All conversation threads (max 50 conversations)
+- `mathsolver_active_conversation_id` - Currently active conversation ID
+- `mathsolver_layout_width` - User's preferred panel width percentage (deprecated but kept for compatibility)
 
 ### Responsive Design
 
@@ -123,23 +142,48 @@ All data is stored in browser localStorage:
 
 ## Important Implementation Details
 
+### Multi-Turn Conversation Flow
+1. User types message in TipTap editor with optional math formulas
+2. User clicks "发送" button (send button in editor toolbar)
+3. Content extracted to plain text with LaTeX markers
+4. `useAISolver.solve()` adds user message to active conversation
+5. Creates empty assistant message for streaming
+6. Full conversation history sent to API for context-aware response
+7. AI response streams in real-time, updating assistant message
+8. Rendered in MessageBubble component with Markdown + KaTeX
+9. Editor automatically clears after successful send
+10. Conversation auto-saves to localStorage
+
 ### Math Rendering Pipeline
 1. User inputs math via MathLive widget (triggered by "插入公式" button)
 2. LaTeX stored in MathNode's `data-latex` attribute
 3. Content extracted to plain text with LaTeX markers for API
 4. AI response (Markdown + LaTeX) rendered via markdown-it + KaTeX
-5. Rendered HTML displayed in SolutionDisplay component
+5. Rendered HTML displayed in MessageBubble component with proper styling
+6. Special CSS rule hides extra `<br>` tags after `<section>` to prevent spacing issues with block math
+
+### Conversation Management
+- Each conversation has unique ID, auto-generated title, and message array
+- Conversations sorted by last update time (newest first)
+- Active conversation tracked globally via singleton state
+- Users can switch between conversations without losing context
+- Maximum 50 conversations stored, oldest removed when limit exceeded
+- Individual messages can be copied or deleted
+- Entire conversations can be deleted from conversation list
 
 ### Streaming Response Handling
 - API responses use SSE format (`data: {...}\n\n`)
-- Content chunks accumulated in `currentAnswer` ref
-- UI updates reactively as chunks arrive
+- Content chunks accumulated in assistant message via `updateAssistantMessage()`
+- UI updates reactively as chunks arrive via Vue's reactivity system
 - Handles `[DONE]` signal and incomplete buffer data
+- On error, incomplete assistant message is deleted
+- On success, conversation auto-saves to localStorage
 
 ### Error Handling
 - API errors parsed into user-friendly messages
 - Network errors, timeouts, and rate limits handled gracefully
 - Markdown rendering errors caught and displayed
+- Failed messages removed from conversation to maintain clean state
 
 ## Node Version Requirement
 
