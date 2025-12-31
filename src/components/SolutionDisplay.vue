@@ -281,6 +281,11 @@ watch(() => props.content, async () => {
   overflow-y: hidden;
 }
 
+/* 隐藏紧跟在section标签后面的br标签，避免行间公式下方出现多余空行 */
+.markdown-content :deep(section + br) {
+  display: none;
+}
+
 .markdown-content :deep(.katex) {
   font-size: 1.1em;
 }
