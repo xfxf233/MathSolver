@@ -4,17 +4,17 @@ import AppHeader from './components/AppHeader.vue'
 import MainLayout from './components/MainLayout.vue'
 import MathEditor from './components/MathEditor.vue'
 import ConversationPanel from './components/ConversationPanel.vue'
-import ApiSettingsDialog from './components/ApiSettingsDialog.vue'
+import SettingsDialog from './components/SettingsDialog.vue'
 import { useConversations } from './composables/useConversations'
 import { useAISolver } from './composables/useAISolver'
-import { useApiConfig } from './composables/useApiConfig'
+import { useSettings } from './composables/useSettings'
 
 const showSettings = ref(false)
 const editorRef = ref(null)
 
-const { config, isConfigValid } = useApiConfig()
+const { isApiConfigValid } = useSettings()
 const { activeConversationId, createConversation } = useConversations()
-const { isSolving, solve } = useAISolver(config)
+const { isSolving, solve } = useAISolver()
 
 // Ensure there's always an active conversation
 onMounted(() => {
@@ -24,7 +24,7 @@ onMounted(() => {
 })
 
 const handleSend = async (content) => {
-  if (!isConfigValid()) {
+  if (!isApiConfigValid()) {
     alert('请先配置API设置')
     showSettings.value = true
     return
@@ -80,7 +80,7 @@ const closeSettings = () => {
       </template>
     </MainLayout>
 
-    <ApiSettingsDialog
+    <SettingsDialog
       v-if="showSettings"
       @close="closeSettings"
     />

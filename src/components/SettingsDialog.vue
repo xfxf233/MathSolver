@@ -1,18 +1,23 @@
 <script setup>
-import { ref, watch } from 'vue'
-import { useApiConfig } from '../composables/useApiConfig'
+import { ref } from 'vue'
+import { useSettings } from '../composables/useSettings'
 
 const emit = defineEmits(['close'])
 
-const { config, saveConfig, isConfigValid } = useApiConfig()
+const { settings, saveSettings } = useSettings()
 
 // 本地表单数据
 const formData = ref({
-  endpoint: config.value.endpoint,
-  apiKey: config.value.apiKey,
-  model: config.value.model,
-  temperature: config.value.temperature,
-  maxTokens: config.value.maxTokens
+  user: {
+    nickname: settings.value.user.nickname
+  },
+  api: {
+    endpoint: settings.value.api.endpoint,
+    apiKey: settings.value.api.apiKey,
+    model: settings.value.api.model,
+    temperature: settings.value.api.temperature,
+    maxTokens: settings.value.api.maxTokens
+  }
 })
 
 const showAdvanced = ref(false)
@@ -20,10 +25,10 @@ const saveMessage = ref('')
 
 const handleSave = () => {
   // 更新配置
-  config.value = { ...formData.value }
+  settings.value = { ...formData.value }
 
   // 保存到localStorage
-  const success = saveConfig()
+  const success = saveSettings()
 
   if (success) {
     saveMessage.value = '保存成功'
@@ -51,7 +56,7 @@ const handleOverlayClick = (e) => {
   <div class="dialog-overlay" @click="handleOverlayClick">
     <div class="dialog-content">
       <div class="dialog-header">
-        <h2>API 设置</h2>
+        <h2>设置</h2>
         <button class="close-button" @click="handleClose">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -61,75 +66,97 @@ const handleOverlayClick = (e) => {
       </div>
 
       <form @submit.prevent="handleSave" class="dialog-form">
-        <div class="form-group">
-          <label for="endpoint">API 端点 *</label>
-          <input
-            id="endpoint"
-            v-model="formData.endpoint"
-            type="url"
-            placeholder="https://api.openai.com/v1/chat/completions"
-            required
-          />
-          <span class="form-hint">支持OpenAI格式的API端点</span>
-        </div>
+        <!-- 用户设置分组 -->
+        <div class="settings-section">
+          <h3 class="section-title">用户设置</h3>
 
-        <div class="form-group">
-          <label for="apiKey">API 密钥 *</label>
-          <input
-            id="apiKey"
-            v-model="formData.apiKey"
-            type="password"
-            placeholder="sk-..."
-            required
-          />
-          <span class="form-hint">您的API密钥将安全存储在本地</span>
-        </div>
-
-        <div class="form-group">
-          <label for="model">模型名称 *</label>
-          <input
-            id="model"
-            v-model="formData.model"
-            type="text"
-            placeholder="gpt-4o-mini"
-            required
-          />
-          <span class="form-hint">例如: gpt-4o-mini, gpt-4, claude-3-5-sonnet等</span>
-        </div>
-
-        <button
-          type="button"
-          class="advanced-toggle"
-          @click="showAdvanced = !showAdvanced"
-        >
-          {{ showAdvanced ? '隐藏' : '显示' }}高级选项
-        </button>
-
-        <div v-if="showAdvanced" class="advanced-options">
           <div class="form-group">
-            <label for="temperature">温度 (Temperature)</label>
+            <label for="nickname">昵称</label>
             <input
-              id="temperature"
-              v-model.number="formData.temperature"
-              type="number"
-              min="0"
-              max="2"
-              step="0.1"
+              id="nickname"
+              v-model="formData.user.nickname"
+              type="text"
+              placeholder="你"
+              maxlength="20"
             />
-            <span class="form-hint">控制输出的随机性，范围0-2，默认0.7</span>
+            <span class="form-hint">显示在消息气泡上的名称</span>
+          </div>
+        </div>
+
+        <!-- API 设置分组 -->
+        <div class="settings-section">
+          <h3 class="section-title">API 设置</h3>
+
+          <div class="form-group">
+            <label for="endpoint">API 端点 *</label>
+            <input
+              id="endpoint"
+              v-model="formData.api.endpoint"
+              type="url"
+              placeholder="https://api.openai.com/v1/chat/completions"
+              required
+            />
+            <span class="form-hint">支持OpenAI格式的API端点</span>
           </div>
 
           <div class="form-group">
-            <label for="maxTokens">最大Token数</label>
+            <label for="apiKey">API 密钥 *</label>
             <input
-              id="maxTokens"
-              v-model.number="formData.maxTokens"
-              type="number"
-              min="100"
-              max="4000"
-              step="100"
+              id="apiKey"
+              v-model="formData.api.apiKey"
+              type="password"
+              placeholder="sk-..."
+              required
             />
-            <span class="form-hint">限制输出长度，默认2000</span>
+            <span class="form-hint">您的API密钥将安全存储在本地</span>
+          </div>
+
+          <div class="form-group">
+            <label for="model">模型名称 *</label>
+            <input
+              id="model"
+              v-model="formData.api.model"
+              type="text"
+              placeholder="gpt-4o-mini"
+              required
+            />
+            <span class="form-hint">例如: gpt-4o-mini, gpt-4, claude-3-5-sonnet等</span>
+          </div>
+
+          <button
+            type="button"
+            class="advanced-toggle"
+            @click="showAdvanced = !showAdvanced"
+          >
+            {{ showAdvanced ? '隐藏' : '显示' }}高级选项
+          </button>
+
+          <div v-if="showAdvanced" class="advanced-options">
+            <div class="form-group">
+              <label for="temperature">温度 (Temperature)</label>
+              <input
+                id="temperature"
+                v-model.number="formData.api.temperature"
+                type="number"
+                min="0"
+                max="2"
+                step="0.1"
+              />
+              <span class="form-hint">控制输出的随机性，范围0-2，默认0.7</span>
+            </div>
+
+            <div class="form-group">
+              <label for="maxTokens">最大Token数</label>
+              <input
+                id="maxTokens"
+                v-model.number="formData.api.maxTokens"
+                type="number"
+                min="100"
+                max="4000"
+                step="100"
+              />
+              <span class="form-hint">限制输出长度，默认2000</span>
+            </div>
           </div>
         </div>
 
@@ -212,6 +239,23 @@ const handleOverlayClick = (e) => {
 
 .dialog-form {
   padding: 24px;
+}
+
+.settings-section {
+  margin-bottom: 32px;
+}
+
+.settings-section:last-of-type {
+  margin-bottom: 0;
+}
+
+.section-title {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #e5e7eb;
 }
 
 .form-group {

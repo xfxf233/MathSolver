@@ -1,7 +1,7 @@
 <template>
   <div class="message-bubble" :class="{ 'user': isUser, 'assistant': !isUser }">
     <div class="message-header">
-      <span class="role-label">{{ isUser ? '你' : 'AI' }}</span>
+      <span class="role-label">{{ isUser ? userNickname : 'AI' }}</span>
       <span class="timestamp">{{ formatTime(message.timestamp) }}</span>
     </div>
 
@@ -63,6 +63,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useMarkdownRenderer } from '../composables/useMarkdownRenderer'
+import { useSettings } from '../composables/useSettings'
 
 const props = defineProps({
   message: {
@@ -74,8 +75,12 @@ const props = defineProps({
 defineEmits(['copy', 'delete'])
 
 const { render } = useMarkdownRenderer()
+const { settings } = useSettings()
 
 const isUser = computed(() => props.message.role === 'user')
+
+// Get user nickname from settings
+const userNickname = computed(() => settings.value.user.nickname || '你')
 
 // Check if reasoning exists
 const hasReasoning = computed(() =>

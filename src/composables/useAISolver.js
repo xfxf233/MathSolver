@@ -1,12 +1,15 @@
 import { ref } from 'vue'
 import { AIService } from '../services/apiService'
 import { useConversations } from './useConversations'
+import { useSettings } from './useSettings'
 
-export function useAISolver(config) {
-  const isSolving = ref(false)
-  const error = ref(null)
-  const currentStreamingMessageId = ref(null)
+// 单例模式：创建共享的状态
+const isSolving = ref(false)
+const error = ref(null)
+const currentStreamingMessageId = ref(null)
 
+export function useAISolver() {
+  const { settings } = useSettings()
   const {
     activeConversation,
     addUserMessage,
@@ -28,7 +31,7 @@ export function useAISolver(config) {
       return ''
     }
 
-    if (!config.value.apiKey) {
+    if (!settings.value.api.apiKey) {
       error.value = '请先配置API密钥'
       return ''
     }
@@ -58,10 +61,10 @@ export function useAISolver(config) {
         }))
 
       // Update conversation model if not set
-      updateConversationModel(config.value.model)
+      updateConversationModel(settings.value.api.model)
 
       // Stream response
-      const service = new AIService(config.value)
+      const service = new AIService(settings.value.api)
       const generator = service.solveMath(messages)
 
       let fullContent = ''

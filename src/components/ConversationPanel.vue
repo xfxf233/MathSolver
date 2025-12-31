@@ -2,11 +2,9 @@
 import { ref, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useConversations } from '../composables/useConversations'
 import { useAISolver } from '../composables/useAISolver'
-import { useApiConfig } from '../composables/useApiConfig'
 import MessageBubble from './MessageBubble.vue'
 import ConversationList from './ConversationList.vue'
 
-const { config } = useApiConfig()
 const {
   conversations,
   activeConversationId,
@@ -18,7 +16,7 @@ const {
   deleteMessage
 } = useConversations()
 
-const { isSolving, error } = useAISolver(config, activeConversationId)
+const { isSolving, error } = useAISolver()
 
 const showConversationList = ref(false)
 const messagesContainer = ref(null)

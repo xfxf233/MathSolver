@@ -47,17 +47,20 @@ The app follows a component-based architecture with composables for shared logic
 - `MathEditor.vue` - TipTap editor with custom MathNode extension for inline LaTeX, includes send button
 - `MathNodeView.vue` - Vue component rendering MathLive widgets within the editor
 - `ConversationPanel.vue` - Main chat interface managing conversation display, new conversation creation, conversation list, and smart scrolling with quick navigation buttons
-- `MessageBubble.vue` - Individual message display component with copy/delete actions, renders both user and AI messages with Markdown + KaTeX support, includes collapsible reasoning section for AI thinking process
+- `MessageBubble.vue` - Individual message display component with copy/delete actions, renders both user and AI messages with Markdown + KaTeX support, includes collapsible reasoning section for AI thinking process, displays custom user nickname
 - `ConversationList.vue` - Sidebar for viewing and switching between conversations
-- `ApiSettingsDialog.vue` - Configuration dialog for API settings
+- `SettingsDialog.vue` - Configuration dialog for user settings and API settings, organized in sections
 - `ResizeDivider.vue` - Draggable divider supporting both horizontal (desktop) and vertical (mobile) directions, with mouse and touch event support for adjusting panel sizes
 
 ### Composables (Shared Logic)
 
-**`useApiConfig.js`** - Singleton pattern for API configuration
-- Manages OpenAI-compatible API settings (endpoint, key, model, temperature, maxTokens)
-- Persists config to localStorage under key `mathsolver_api_config`
-- Default endpoint: `https://api.openai.com/v1/chat/completions`
+**`useSettings.js`** - Singleton pattern for application settings
+- Manages user settings (nickname) and API settings (endpoint, key, model, temperature, maxTokens)
+- Persists settings to localStorage under key `mathsolver_settings`
+- Settings structure:
+  - `user`: { nickname: '你' }
+  - `api`: { endpoint, apiKey, model, temperature, maxTokens }
+- Default API endpoint: `https://api.openai.com/v1/chat/completions`
 - Default model: `gpt-4o-mini`
 
 **`useConversations.js`** - Conversation state management (singleton)
@@ -72,8 +75,10 @@ The app follows a component-based architecture with composables for shared logic
 - Clears old `mathsolver_history` data on first load
 - Includes data migration logic to add `reasoning` field to old messages
 
-**`useAISolver.js`** - AI problem solving logic with conversation integration
+**`useAISolver.js`** - AI problem solving logic with conversation integration (singleton)
+- Singleton pattern: shared state across all components
 - Integrates with `useConversations` for multi-turn conversation support
+- Integrates with `useSettings` to access API configuration
 - Manages solving state (isSolving, error)
 - Provides `solve()` and `stop()` methods
 - Sends full conversation history to API for context-aware responses
@@ -117,15 +122,15 @@ The app follows a component-based architecture with composables for shared logic
 ### State Management
 
 The app uses Vue 3's Composition API with singleton composables for shared state:
-- API configuration is shared across all components via `useApiConfig()`
+- Application settings (user + API) are shared across all components via `useSettings()` (singleton pattern)
 - Conversation state is shared via `useConversations()` (singleton pattern)
-- AI solving state is managed via `useAISolver()` which integrates with conversations
-- All conversation data persists automatically to localStorage
+- AI solving state is managed via `useAISolver()` (singleton pattern) which integrates with settings and conversations
+- All settings and conversation data persist automatically to localStorage
 
 ### Data Persistence
 
 All data is stored in browser localStorage:
-- `mathsolver_api_config` - API settings
+- `mathsolver_settings` - User settings (nickname) and API settings (endpoint, apiKey, model, temperature, maxTokens)
 - `mathsolver_conversations` - All conversation threads (max 50 conversations)
 - `mathsolver_active_conversation_id` - Currently active conversation ID
 - `mathsolver_layout_width` - Desktop panel width percentage (20%-80%)
