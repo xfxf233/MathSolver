@@ -47,7 +47,7 @@ The app follows a component-based architecture with composables for shared logic
 - `MathEditor.vue` - TipTap editor with custom MathNode extension for inline LaTeX, includes send button
 - `MathNodeView.vue` - Vue component rendering MathLive widgets within the editor
 - `ConversationPanel.vue` - Main chat interface managing conversation display, new conversation creation, and conversation list
-- `MessageBubble.vue` - Individual message display component with copy/delete actions
+- `MessageBubble.vue` - Individual message display component with copy/delete actions, renders both user and AI messages with Markdown + KaTeX support
 - `ConversationList.vue` - Sidebar for viewing and switching between conversations
 - `ApiSettingsDialog.vue` - Configuration dialog for API settings
 - `ResizeDivider.vue` - Draggable divider for adjusting panel widths
@@ -81,7 +81,9 @@ The app follows a component-based architecture with composables for shared logic
 
 **`useMarkdownRenderer.js`** - Markdown and LaTeX rendering
 - Configures markdown-it with texmath plugin for KaTeX rendering
-- Uses `$...$` for inline math and `$$...$$` for block math
+- Supports multiple LaTeX delimiters: `$...$` (inline), `$$...$$` (block), `\(...\)` (inline), `\[...\]` (block)
+- Includes preprocessing step that normalizes `\[...\]` to `$$...$$` for consistent rendering
+- This normalization ensures AI responses work regardless of which LaTeX syntax they use
 - Includes syntax highlighting for JavaScript, Python, Java, C++
 - Provides `render()` and `renderInline()` methods
 
@@ -136,22 +138,25 @@ All data is stored in browser localStorage:
 ### Multi-Turn Conversation Flow
 1. User types message in TipTap editor with optional math formulas
 2. User clicks "发送" button (send button in editor toolbar)
-3. Content extracted to plain text with LaTeX markers
+3. Content extracted to plain text with LaTeX markers (`$...$` for inline, `$$...$$` for block)
 4. `useAISolver.solve()` adds user message to active conversation
-5. Creates empty assistant message for streaming
-6. Full conversation history sent to API for context-aware response
-7. AI response streams in real-time, updating assistant message
-8. Rendered in MessageBubble component with Markdown + KaTeX
-9. Editor automatically clears after successful send
-10. Conversation auto-saves to localStorage
+5. User message displayed in MessageBubble with LaTeX rendered via markdown-it + KaTeX
+6. Creates empty assistant message for streaming
+7. Full conversation history sent to API for context-aware response
+8. AI response streams in real-time, updating assistant message
+9. AI message rendered in MessageBubble component with Markdown + KaTeX
+10. Editor automatically clears after successful send
+11. Conversation auto-saves to localStorage
 
 ### Math Rendering Pipeline
 1. User inputs math via MathLive widget (triggered by "插入公式" button)
 2. LaTeX stored in MathNode's `data-latex` attribute
-3. Content extracted to plain text with LaTeX markers for API
-4. AI response (Markdown + LaTeX) rendered via markdown-it + KaTeX
-5. Rendered HTML displayed in MessageBubble component with proper styling
-6. Special CSS rule hides extra `<br>` tags after `<section>` to prevent spacing issues with block math
+3. Content extracted to plain text with LaTeX markers (`$...$` for inline, `$$...$$` for block)
+4. User message sent to API and displayed in MessageBubble with LaTeX rendered via markdown-it + KaTeX
+5. AI response (Markdown + LaTeX) also rendered via markdown-it + KaTeX
+6. Both user and AI messages displayed in MessageBubble component with proper styling
+7. User messages have white text on blue background with adjusted KaTeX styling for readability
+8. Special CSS rule hides extra `<br>` tags after `<section>` to prevent spacing issues with block math
 
 ### Conversation Management
 - Each conversation has unique ID, auto-generated title, and message array
