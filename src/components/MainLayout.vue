@@ -3,7 +3,8 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import ResizeDivider from './ResizeDivider.vue'
 
 const isMobile = ref(false)
-const leftWidth = ref(50) // 默认左侧占50%
+const leftWidth = ref(50) // 默认左侧占50%（桌面端）
+const topHeight = ref(60) // 默认顶部占60%（移动端）
 
 const checkMobile = () => {
   isMobile.value = window.innerWidth < 768
@@ -16,6 +17,16 @@ const handleResize = (newWidth) => {
     localStorage.setItem('mathsolver_layout_width', newWidth.toString())
   } catch (error) {
     console.error('保存布局宽度失败:', error)
+  }
+}
+
+const handleMobileResize = (newHeight) => {
+  topHeight.value = newHeight
+  // 保存到localStorage
+  try {
+    localStorage.setItem('mathsolver_mobile_height', newHeight.toString())
+  } catch (error) {
+    console.error('保存移动端布局高度失败:', error)
   }
 }
 
@@ -32,6 +43,16 @@ onMounted(() => {
   } catch (error) {
     console.error('加载布局宽度失败:', error)
   }
+
+  // 从localStorage加载保存的移动端高度
+  try {
+    const savedHeight = localStorage.getItem('mathsolver_mobile_height')
+    if (savedHeight) {
+      topHeight.value = parseFloat(savedHeight)
+    }
+  } catch (error) {
+    console.error('加载移动端布局高度失败:', error)
+  }
 })
 
 onUnmounted(() => {
@@ -47,7 +68,7 @@ onUnmounted(() => {
         <slot name="left"></slot>
       </div>
 
-      <ResizeDivider @resize="handleResize" />
+      <ResizeDivider direction="horizontal" @resize="handleResize" />
 
       <div class="right-panel" :style="{ width: (100 - leftWidth) + '%' }">
         <slot name="right"></slot>
@@ -56,11 +77,13 @@ onUnmounted(() => {
 
     <!-- 移动端布局 -->
     <div v-else class="mobile-layout">
-      <div class="top-panel">
+      <div class="top-panel" :style="{ height: topHeight + '%' }">
         <slot name="right"></slot>
       </div>
 
-      <div class="bottom-panel">
+      <ResizeDivider direction="vertical" @resize="handleMobileResize" />
+
+      <div class="bottom-panel" :style="{ height: (100 - topHeight) + '%' }">
         <slot name="left"></slot>
       </div>
     </div>
@@ -106,19 +129,16 @@ onUnmounted(() => {
 }
 
 .top-panel {
-  flex: 1;
-  min-height: 0;
+  min-height: 20%;
+  max-height: 80%;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  border-bottom: 2px solid #e5e7eb;
 }
 
 .bottom-panel {
-  flex: 0 0 auto;
-  height: 40vh;
-  min-height: 200px;
-  max-height: 60vh;
+  min-height: 20%;
+  max-height: 80%;
   overflow: hidden;
   display: flex;
   flex-direction: column;

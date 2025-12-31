@@ -50,7 +50,7 @@ The app follows a component-based architecture with composables for shared logic
 - `MessageBubble.vue` - Individual message display component with copy/delete actions, renders both user and AI messages with Markdown + KaTeX support, includes collapsible reasoning section for AI thinking process
 - `ConversationList.vue` - Sidebar for viewing and switching between conversations
 - `ApiSettingsDialog.vue` - Configuration dialog for API settings
-- `ResizeDivider.vue` - Draggable divider for adjusting panel widths
+- `ResizeDivider.vue` - Draggable divider supporting both horizontal (desktop) and vertical (mobile) directions, with mouse and touch event support for adjusting panel sizes
 
 ### Composables (Shared Logic)
 
@@ -128,15 +128,53 @@ All data is stored in browser localStorage:
 - `mathsolver_api_config` - API settings
 - `mathsolver_conversations` - All conversation threads (max 50 conversations)
 - `mathsolver_active_conversation_id` - Currently active conversation ID
-- `mathsolver_layout_width` - User's preferred panel width percentage (deprecated but kept for compatibility)
+- `mathsolver_layout_width` - Desktop panel width percentage (20%-80%)
+- `mathsolver_mobile_height` - Mobile top panel height percentage (20%-80%)
 
 ### Responsive Design
 
-- Desktop (≥769px): Side-by-side panels with draggable divider
-- Mobile (<768px): Stacked layout with AI solution on top, input on bottom
-- Layout preference persists via localStorage
+**Desktop Layout (≥769px):**
+- Side-by-side panels with horizontal draggable divider
+- Left panel: Math editor for input
+- Right panel: Conversation display
+- Divider can be dragged left/right to adjust panel widths (20%-80% range)
+- Width preference persists via localStorage (`mathsolver_layout_width`)
+
+**Mobile Layout (<768px):**
+- Stacked vertical layout with vertical draggable divider
+- Top panel: Conversation display (default 60% height)
+- Bottom panel: Math editor for input (default 40% height)
+- Divider can be dragged up/down to adjust panel heights (20%-80% range)
+- Height preference persists via localStorage (`mathsolver_mobile_height`)
+- Touch-optimized: larger touch area (12px) and visible handle for better discoverability
 
 ## Important Implementation Details
+
+### Resizable Panel System
+
+**ResizeDivider Component:**
+- Supports two directions via `direction` prop: `horizontal` (left/right) and `vertical` (up/down)
+- Handles both mouse events (desktop) and touch events (mobile)
+- Emits `resize` event with percentage value (0-100)
+- Enforces 20%-80% range to ensure both panels remain usable
+- Visual feedback: changes color on hover and during drag
+- Cursor automatically changes based on direction (col-resize / row-resize)
+
+**Desktop Implementation:**
+- Horizontal divider between left and right panels
+- Mouse drag to adjust panel widths
+- Default: 50% left, 50% right
+- Persists to `mathsolver_layout_width`
+
+**Mobile Implementation:**
+- Vertical divider between top and bottom panels
+- Touch drag to adjust panel heights
+- Default: 60% top, 40% bottom
+- Persists to `mathsolver_mobile_height`
+- Enhanced touch experience:
+  - Larger touch target (12px vs 8px)
+  - Visible handle by default (60% opacity)
+  - Prevents page scrolling during drag
 
 ### Multi-Turn Conversation Flow
 1. User types message in TipTap editor with optional math formulas
