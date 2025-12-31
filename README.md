@@ -114,15 +114,11 @@ src/
 │   ├── ConversationPanel.vue       # 对话面板（聊天界面）
 │   ├── MessageBubble.vue           # 消息气泡组件
 │   ├── ConversationList.vue        # 对话列表侧边栏
-│   ├── ApiSettingsDialog.vue       # API设置对话框
-│   ├── AISolutionPanel.vue         # [已弃用] 旧版解答面板
-│   ├── SolutionDisplay.vue         # [已弃用] 旧版解答渲染
-│   └── HistoryPanel.vue            # [已弃用] 旧版历史记录
+│   └── ApiSettingsDialog.vue       # API设置对话框
 ├── composables/         # 组合式函数
 │   ├── useApiConfig.js             # API配置管理
-│   ├── useConversations.js         # 对话状态管理（新）
-│   ├── useAISolver.js              # AI求解逻辑（已重构）
-│   ├── useHistory.js               # [已弃用] 旧版历史记录
+│   ├── useConversations.js         # 对话状态管理
+│   ├── useAISolver.js              # AI求解逻辑
 │   └── useMarkdownRenderer.js      # Markdown渲染器
 ├── services/            # 服务层
 │   └── apiService.js               # API请求服务（支持多轮对话）

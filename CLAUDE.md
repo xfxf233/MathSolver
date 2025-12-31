@@ -52,11 +52,6 @@ The app follows a component-based architecture with composables for shared logic
 - `ApiSettingsDialog.vue` - Configuration dialog for API settings
 - `ResizeDivider.vue` - Draggable divider for adjusting panel widths
 
-**Deprecated Components (kept for reference):**
-- `AISolutionPanel.vue` - Replaced by ConversationPanel.vue
-- `SolutionDisplay.vue` - Replaced by MessageBubble.vue
-- `HistoryPanel.vue` - Replaced by ConversationList.vue
-
 ### Composables (Shared Logic)
 
 **`useApiConfig.js`** - Singleton pattern for API configuration
@@ -83,10 +78,6 @@ The app follows a component-based architecture with composables for shared logic
 - Handles streaming responses by updating assistant messages in real-time
 - Includes error parsing for common API errors (401, 429, 500, timeout, network)
 - Automatically saves conversation state after streaming completes
-
-**`useHistory.js`** - DEPRECATED (replaced by useConversations.js)
-- Old single Q&A history system
-- Kept for reference only
 
 **`useMarkdownRenderer.js`** - Markdown and LaTeX rendering
 - Configures markdown-it with texmath plugin for KaTeX rendering
