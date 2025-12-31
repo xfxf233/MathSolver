@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, nextTick } from 'vue'
+import { ref, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useConversations } from '../composables/useConversations'
 import { useAISolver } from '../composables/useAISolver'
 import { useApiConfig } from '../composables/useApiConfig'
@@ -22,6 +22,37 @@ const { isSolving, error } = useAISolver(config, activeConversationId)
 
 const showConversationList = ref(false)
 const messagesContainer = ref(null)
+const isUserScrolling = ref(false)
+const showScrollToTop = ref(false)
+const showScrollToBottom = ref(false)
+
+// Check if user is at the bottom of the scroll container
+const isAtBottom = () => {
+  if (!messagesContainer.value) return true
+  const { scrollTop, scrollHeight, clientHeight } = messagesContainer.value
+  // Consider "at bottom" if within 50px of the bottom
+  return scrollHeight - scrollTop - clientHeight < 50
+}
+
+// Handle scroll event to detect user scrolling
+const handleScroll = () => {
+  if (!messagesContainer.value) return
+
+  const { scrollTop, scrollHeight, clientHeight } = messagesContainer.value
+  const atBottom = isAtBottom()
+
+  // Update scroll button visibility
+  showScrollToTop.value = scrollTop > 200
+  showScrollToBottom.value = !atBottom
+
+  // If user scrolls away from bottom, mark as user scrolling
+  if (!atBottom) {
+    isUserScrolling.value = true
+  } else {
+    // If user scrolls back to bottom, allow auto-scroll again
+    isUserScrolling.value = false
+  }
+}
 
 // Auto-scroll to bottom when new messages arrive
 watch(() => activeConversation.value?.messages.length, async () => {
@@ -38,11 +69,44 @@ watch(() => {
   scrollToBottom()
 }, { flush: 'post' })
 
-const scrollToBottom = () => {
+const scrollToBottom = (force = false) => {
   if (messagesContainer.value) {
-    messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
+    // Only auto-scroll if user hasn't manually scrolled away, or if forced
+    if (force || !isUserScrolling.value) {
+      messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
+    }
   }
 }
+
+const scrollToTopAction = () => {
+  if (messagesContainer.value) {
+    messagesContainer.value.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+}
+
+const scrollToBottomAction = () => {
+  if (messagesContainer.value) {
+    messagesContainer.value.scrollTo({
+      top: messagesContainer.value.scrollHeight,
+      behavior: 'smooth'
+    })
+    // Reset user scrolling flag when manually scrolling to bottom
+    isUserScrolling.value = false
+  }
+}
+
+// Setup scroll listener
+onMounted(() => {
+  if (messagesContainer.value) {
+    messagesContainer.value.addEventListener('scroll', handleScroll)
+  }
+})
+
+onUnmounted(() => {
+  if (messagesContainer.value) {
+    messagesContainer.value.removeEventListener('scroll', handleScroll)
+  }
+})
 
 const handleNewConversation = () => {
   const newId = createConversation()
@@ -146,6 +210,30 @@ const dismissError = () => {
       </div>
     </div>
 
+    <!-- Scroll Navigation Buttons (outside scroll container) -->
+    <div class="scroll-buttons">
+      <button
+        v-if="showScrollToTop"
+        @click="scrollToTopAction"
+        class="scroll-btn scroll-to-top"
+        title="回到顶部"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="18 15 12 9 6 15"></polyline>
+        </svg>
+      </button>
+      <button
+        v-if="showScrollToBottom"
+        @click="scrollToBottomAction"
+        class="scroll-btn scroll-to-bottom"
+        title="回到底部"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </button>
+    </div>
+
     <!-- Error Display -->
     <div v-if="error" class="error-banner">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -240,6 +328,59 @@ const dismissError = () => {
   padding: 16px;
   background: #f9fafb;
   scroll-behavior: smooth;
+}
+
+.scroll-buttons {
+  position: absolute;
+  right: 20px;
+  bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.scroll-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  animation: fadeIn 0.3s ease;
+  pointer-events: auto;
+}
+
+.scroll-btn:hover {
+  background: #4a90e2;
+  border-color: #4a90e2;
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+}
+
+.scroll-btn:hover svg {
+  stroke: white;
+}
+
+.scroll-btn:active {
+  transform: scale(0.95);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .empty-state {
@@ -406,5 +547,25 @@ const dismissError = () => {
   .messages-container {
     padding: 12px;
   }
+
+  .scroll-buttons {
+    right: 12px;
+    bottom: 12px;
+  }
+
+  .scroll-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .scroll-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+/* Adjust button position when error banner is visible */
+.conversation-panel:has(.error-banner) .scroll-buttons {
+  bottom: 70px;
 }
 </style>

@@ -46,7 +46,7 @@ The app follows a component-based architecture with composables for shared logic
 **Key Components:**
 - `MathEditor.vue` - TipTap editor with custom MathNode extension for inline LaTeX, includes send button
 - `MathNodeView.vue` - Vue component rendering MathLive widgets within the editor
-- `ConversationPanel.vue` - Main chat interface managing conversation display, new conversation creation, and conversation list
+- `ConversationPanel.vue` - Main chat interface managing conversation display, new conversation creation, conversation list, and smart scrolling with quick navigation buttons
 - `MessageBubble.vue` - Individual message display component with copy/delete actions, renders both user and AI messages with Markdown + KaTeX support, includes collapsible reasoning section for AI thinking process
 - `ConversationList.vue` - Sidebar for viewing and switching between conversations
 - `ApiSettingsDialog.vue` - Configuration dialog for API settings
@@ -175,10 +175,25 @@ All data is stored in browser localStorage:
 - Each chunk contains `content` and `reasoning` fields (both optional)
 - Content and reasoning chunks accumulated separately in assistant message via `updateAssistantMessage()`
 - UI updates reactively as chunks arrive via Vue's reactivity system
-- ConversationPanel watches both `content` and `reasoning` changes for auto-scrolling
+- ConversationPanel implements intelligent auto-scrolling with user scroll detection
 - Handles `[DONE]` signal and incomplete buffer data
 - On error, incomplete assistant message is deleted
 - On success, conversation auto-saves to localStorage
+
+### Smart Scrolling and Navigation
+- **Intelligent Auto-Scroll**: Automatically scrolls to bottom during AI streaming responses
+- **User Scroll Detection**: Detects when user manually scrolls up to read previous content
+  - Uses 50px tolerance to determine if user is at bottom
+  - Pauses auto-scrolling when user scrolls away from bottom
+  - Resumes auto-scrolling when user scrolls back to bottom
+- **Quick Navigation Buttons**: Fixed-position floating buttons for easy navigation
+  - "Scroll to Top" button: Appears when scrolled down more than 200px
+  - "Scroll to Bottom" button: Appears when not at bottom of conversation
+  - Buttons fixed to panel (not scroll container) for consistent visibility
+  - Smooth scroll animation on click
+  - Clicking "Scroll to Bottom" re-enables auto-scrolling
+  - Buttons automatically adjust position when error banner is visible
+  - Responsive design: smaller buttons on mobile devices
 
 ### Reasoning Display (AI Thinking Process)
 - Supported for models that provide `reasoning_content` or `reasoning` field (e.g., OpenAI o1/o3)
