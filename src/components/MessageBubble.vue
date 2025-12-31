@@ -9,8 +9,38 @@
       <!-- User message: rendered LaTeX -->
       <div v-if="isUser" class="user-content markdown-content" v-html="renderedContent"></div>
 
-      <!-- Assistant message: rendered Markdown -->
-      <div v-else class="assistant-content markdown-content" v-html="renderedContent"></div>
+      <!-- Assistant message: with optional reasoning -->
+      <div v-else class="assistant-content">
+        <!-- Reasoning section (collapsible, only if reasoning exists) -->
+        <div v-if="hasReasoning" class="reasoning-section">
+          <button
+            @click="toggleReasoning"
+            class="reasoning-toggle"
+            :aria-expanded="!isReasoningCollapsed"
+          >
+            <svg
+              class="toggle-icon"
+              :class="{ 'rotated': isReasoningCollapsed }"
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+            <span class="reasoning-label">思考过程</span>
+          </button>
+
+          <div v-show="!isReasoningCollapsed" class="reasoning-content markdown-content">
+            <div v-html="renderedReasoning"></div>
+          </div>
+        </div>
+
+        <!-- Answer content -->
+        <div class="answer-content markdown-content" v-html="renderedContent"></div>
+      </div>
     </div>
 
     <div class="message-actions">
@@ -31,7 +61,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { useMarkdownRenderer } from '../composables/useMarkdownRenderer'
 
 const props = defineProps({
@@ -47,8 +77,28 @@ const { render } = useMarkdownRenderer()
 
 const isUser = computed(() => props.message.role === 'user')
 
+// Check if reasoning exists
+const hasReasoning = computed(() =>
+  props.message.reasoning && props.message.reasoning.trim().length > 0
+)
+
+// Reasoning collapse state (default: expanded)
+const isReasoningCollapsed = ref(false)
+
+// Toggle collapse state
+const toggleReasoning = () => {
+  isReasoningCollapsed.value = !isReasoningCollapsed.value
+}
+
+// Render reasoning
+const renderedReasoning = computed(() => {
+  if (!props.message.reasoning) return ''
+  return render(props.message.reasoning)
+})
+
+// Render content
 const renderedContent = computed(() => {
-  return render(props.message.content)
+  return render(props.message.content || '')
 })
 
 const formatTime = (timestamp) => {
@@ -300,6 +350,85 @@ const formatTime = (timestamp) => {
 
   .message-actions {
     opacity: 1; /* Always show on mobile */
+  }
+}
+
+/* Reasoning Section Styles */
+.reasoning-section {
+  margin-bottom: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f9fafb;
+  overflow: hidden;
+}
+
+.reasoning-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7280;
+  transition: background-color 0.2s;
+}
+
+.reasoning-toggle:hover {
+  background: #f3f4f6;
+}
+
+.toggle-icon {
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.toggle-icon.rotated {
+  transform: rotate(-90deg);
+}
+
+.reasoning-label {
+  flex: 1;
+  text-align: left;
+}
+
+.reasoning-content {
+  padding: 12px;
+  background: white;
+  border-top: 1px solid #e5e7eb;
+  color: #4b5563;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* Visual distinction for reasoning */
+.reasoning-content :deep(p) {
+  color: #6b7280;
+}
+
+.reasoning-content :deep(code) {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.reasoning-content :deep(pre) {
+  background: #f5f5f5;
+  border: 1px solid #e0e0e0;
+}
+
+/* Mobile responsive for reasoning */
+@media (max-width: 768px) {
+  .reasoning-toggle {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .reasoning-content {
+    padding: 10px;
+    font-size: 12px;
   }
 }
 </style>

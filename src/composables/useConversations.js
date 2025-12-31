@@ -53,7 +53,16 @@ export function useConversations() {
       try {
         const stored = localStorage.getItem('mathsolver_conversations')
         if (stored) {
-          conversations.value = JSON.parse(stored)
+          const parsed = JSON.parse(stored)
+
+          // Migrate old data: add reasoning field to messages that don't have it
+          conversations.value = parsed.map(conv => ({
+            ...conv,
+            messages: conv.messages.map(msg => ({
+              ...msg,
+              reasoning: msg.reasoning || ''
+            }))
+          }))
         }
 
         const storedActiveId = localStorage.getItem('mathsolver_active_conversation_id')
@@ -204,6 +213,7 @@ export function useConversations() {
         id: generateId(),
         role: 'user',
         content,
+        reasoning: '',  // User messages don't have reasoning
         timestamp: Date.now()
       }
 
@@ -221,18 +231,27 @@ export function useConversations() {
 
     /**
      * Add assistant message to active conversation
-     * @param {string} content - Message content
+     * @param {string|Object} contentOrObject - Message content (string) or object with content and reasoning
      * @returns {string} - Message ID
      */
-    const addAssistantMessage = (content) => {
+    const addAssistantMessage = (contentOrObject = '') => {
       if (!activeConversation.value) {
         createConversation()
       }
+
+      // Backward compatibility: support both string and object
+      const content = typeof contentOrObject === 'string'
+        ? contentOrObject
+        : (contentOrObject?.content || '')
+      const reasoning = typeof contentOrObject === 'object'
+        ? (contentOrObject?.reasoning || '')
+        : ''
 
       const message = {
         id: generateId(),
         role: 'assistant',
         content,
+        reasoning,
         timestamp: Date.now()
       }
 
@@ -246,14 +265,23 @@ export function useConversations() {
     /**
      * Update assistant message content (for streaming)
      * @param {string} messageId - Message ID to update
-     * @param {string} content - New content
+     * @param {string|Object} contentOrObject - New content (string) or object with content and reasoning
      */
-    const updateAssistantMessage = (messageId, content) => {
+    const updateAssistantMessage = (messageId, contentOrObject) => {
       if (!activeConversation.value) return
 
       const message = activeConversation.value.messages.find(m => m.id === messageId)
       if (message && message.role === 'assistant') {
-        message.content = content
+        // Backward compatibility: support both string and object
+        if (typeof contentOrObject === 'string') {
+          message.content = contentOrObject
+          if (!message.reasoning) {
+            message.reasoning = ''
+          }
+        } else {
+          message.content = contentOrObject?.content || ''
+          message.reasoning = contentOrObject?.reasoning || ''
+        }
         activeConversation.value.updatedAt = Date.now()
         // Note: We don't save on every update during streaming to avoid performance issues
         // The final save will happen when streaming completes

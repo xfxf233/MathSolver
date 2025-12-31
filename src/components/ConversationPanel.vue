@@ -30,7 +30,10 @@ watch(() => activeConversation.value?.messages.length, async () => {
 }, { flush: 'post' })
 
 // Also watch for content changes (streaming updates)
-watch(() => activeConversation.value?.messages[activeConversation.value?.messages.length - 1]?.content, async () => {
+watch(() => {
+  const lastMessage = activeConversation.value?.messages[activeConversation.value?.messages.length - 1]
+  return lastMessage ? `${lastMessage.content}|${lastMessage.reasoning}` : ''
+}, async () => {
   await nextTick()
   scrollToBottom()
 }, { flush: 'post' })

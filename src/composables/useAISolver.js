@@ -64,16 +64,21 @@ export function useAISolver(config) {
       const service = new AIService(config.value)
       const generator = service.solveMath(messages)
 
-      let fullAnswer = ''
+      let fullContent = ''
+      let fullReasoning = ''
       for await (const chunk of generator) {
-        fullAnswer += chunk
-        updateAssistantMessage(assistantMessageId, fullAnswer)
+        fullContent += chunk.content
+        fullReasoning += chunk.reasoning
+        updateAssistantMessage(assistantMessageId, {
+          content: fullContent,
+          reasoning: fullReasoning
+        })
       }
 
       // Save conversation after streaming completes
       saveCurrentConversation()
 
-      return fullAnswer
+      return fullContent
     } catch (err) {
       console.error('AI求解失败:', err)
       error.value = parseError(err)

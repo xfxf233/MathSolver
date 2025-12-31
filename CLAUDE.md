@@ -47,7 +47,7 @@ The app follows a component-based architecture with composables for shared logic
 - `MathEditor.vue` - TipTap editor with custom MathNode extension for inline LaTeX, includes send button
 - `MathNodeView.vue` - Vue component rendering MathLive widgets within the editor
 - `ConversationPanel.vue` - Main chat interface managing conversation display, new conversation creation, and conversation list
-- `MessageBubble.vue` - Individual message display component with copy/delete actions, renders both user and AI messages with Markdown + KaTeX support
+- `MessageBubble.vue` - Individual message display component with copy/delete actions, renders both user and AI messages with Markdown + KaTeX support, includes collapsible reasoning section for AI thinking process
 - `ConversationList.vue` - Sidebar for viewing and switching between conversations
 - `ApiSettingsDialog.vue` - Configuration dialog for API settings
 - `ResizeDivider.vue` - Draggable divider for adjusting panel widths
@@ -64,11 +64,13 @@ The app follows a component-based architecture with composables for shared logic
 - Manages all conversation threads and active conversation state
 - Stores up to 50 conversations in localStorage under key `mathsolver_conversations`
 - Each conversation contains: id, title, messages array, model, createdAt, updatedAt
-- Each message contains: id, role (user/assistant), content, timestamp
+- Each message contains: id, role (user/assistant), content, reasoning (optional), timestamp
+- The `reasoning` field stores AI model's thinking process (for models like o1/o3)
 - Provides CRUD operations: createConversation, deleteConversation, setActiveConversation
 - Message operations: addUserMessage, addAssistantMessage, updateAssistantMessage, deleteMessage
 - Auto-generates conversation titles from first user message
 - Clears old `mathsolver_history` data on first load
+- Includes data migration logic to add `reasoning` field to old messages
 
 **`useAISolver.js`** - AI problem solving logic with conversation integration
 - Integrates with `useConversations` for multi-turn conversation support
@@ -91,7 +93,8 @@ The app follows a component-based architecture with composables for shared logic
 
 **`apiService.js`** - AIService class
 - Handles streaming API requests to OpenAI-compatible endpoints
-- `solveMath(messages)` - Async generator accepting full message history array, yielding content chunks
+- `solveMath(messages)` - Async generator accepting full message history array, yielding structured objects with `content` and `reasoning` fields
+- Supports both `reasoning_content` (OpenAI o1/o3) and `reasoning` (other providers) fields
 - `testConnection()` - Validates API configuration
 - Parses SSE (Server-Sent Events) format responses
 - System prompt instructs AI to use Markdown with LaTeX math syntax and remember conversation context
@@ -169,11 +172,22 @@ All data is stored in browser localStorage:
 
 ### Streaming Response Handling
 - API responses use SSE format (`data: {...}\n\n`)
-- Content chunks accumulated in assistant message via `updateAssistantMessage()`
+- Each chunk contains `content` and `reasoning` fields (both optional)
+- Content and reasoning chunks accumulated separately in assistant message via `updateAssistantMessage()`
 - UI updates reactively as chunks arrive via Vue's reactivity system
+- ConversationPanel watches both `content` and `reasoning` changes for auto-scrolling
 - Handles `[DONE]` signal and incomplete buffer data
 - On error, incomplete assistant message is deleted
 - On success, conversation auto-saves to localStorage
+
+### Reasoning Display (AI Thinking Process)
+- Supported for models that provide `reasoning_content` or `reasoning` field (e.g., OpenAI o1/o3)
+- MessageBubble component displays reasoning in a collapsible section above the answer
+- Reasoning section is expanded by default, can be toggled by clicking the header
+- Reasoning content rendered with Markdown + KaTeX, styled differently from answer content
+- Real-time streaming: reasoning updates trigger auto-scroll to keep latest content visible
+- Backward compatible: models without reasoning field display normally
+- Data migration: old messages automatically get empty `reasoning` field on load
 
 ### Error Handling
 - API errors parsed into user-friendly messages

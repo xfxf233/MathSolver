@@ -6,7 +6,7 @@ export class AIService {
   /**
    * 调用AI求解数学问题（流式输出）
    * @param {Array<{role: string, content: string}>} messages - 对话消息数组
-   * @returns {AsyncGenerator<string>} - 流式返回的内容片段
+   * @returns {AsyncGenerator<{content: string, reasoning: string}>} - 流式返回的内容和思考过程片段
    */
   async *solveMath(messages) {
     const response = await fetch(this.config.endpoint, {
@@ -59,9 +59,12 @@ export class AIService {
 
           try {
             const json = JSON.parse(data)
-            const content = json.choices?.[0]?.delta?.content
-            if (content) {
-              yield content
+            const delta = json.choices?.[0]?.delta
+            const content = delta?.content || ''
+            const reasoning = delta?.reasoning_content || delta?.reasoning || ''
+
+            if (content || reasoning) {
+              yield { content, reasoning }
             }
           } catch (error) {
             console.error('解析SSE数据失败:', error, '原始数据:', data)
@@ -77,9 +80,12 @@ export class AIService {
           if (data !== '[DONE]') {
             try {
               const json = JSON.parse(data)
-              const content = json.choices?.[0]?.delta?.content
-              if (content) {
-                yield content
+              const delta = json.choices?.[0]?.delta
+              const content = delta?.content || ''
+              const reasoning = delta?.reasoning_content || delta?.reasoning || ''
+
+              if (content || reasoning) {
+                yield { content, reasoning }
               }
             } catch (error) {
               console.error('解析最后的SSE数据失败:', error)
