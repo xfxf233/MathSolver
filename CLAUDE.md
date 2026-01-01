@@ -48,8 +48,8 @@ The app follows a component-based architecture with composables for shared logic
 - `MathNodeView.vue` - Vue component rendering MathLive widgets within the editor
 - `ConversationPanel.vue` - Main chat interface managing conversation display, new conversation creation, conversation list, and smart scrolling with quick navigation buttons
 - `MessageBubble.vue` - Individual message display component with copy/delete actions, renders both user and AI messages with Markdown + KaTeX support, includes collapsible reasoning section for AI thinking process, displays custom user nickname, supports adjustable opacity for transparency effect
-- `ConversationList.vue` - Sidebar for viewing and switching between conversations
-- `SettingsDialog.vue` - Configuration dialog for user settings (nickname, background image, background opacity, message opacity) and API settings, organized in sections
+- `ConversationList.vue` - Sidebar for viewing and switching between conversations, includes semi-transparent overlay that closes the sidebar when clicked outside
+- `SettingsDialog.vue` - Configuration dialog for user settings (nickname, background image, background opacity, message opacity) and API settings, organized in sections, can only be closed via close button or cancel/save buttons (not by clicking outside)
 - `ImageCropper.vue` - Interactive image cropper for adjusting background images with drag, zoom, and reset functionality
 - `ResizeDivider.vue` - Draggable divider supporting both horizontal (desktop) and vertical (mobile) directions, with mouse and touch event support for adjusting panel sizes
 
@@ -281,6 +281,29 @@ All data is stored in browser localStorage:
   - CSS animation modified to not override opacity setting (removed `opacity: 1` from animation end state)
 - **Use Case**: Allows users to enjoy custom background images while reading conversations
 - **Persistence**: Setting saved to localStorage and persists across sessions
+
+### UI Interaction Behavior
+
+**Conversation List Sidebar:**
+- **Opening**: Click the "对话列表" button in the toolbar to open the sidebar
+- **Overlay**: Semi-transparent dark overlay (30% opacity) appears behind the sidebar
+- **Closing Methods**:
+  - Click anywhere on the overlay (outside the sidebar)
+  - Click the close button (X icon) in the sidebar header
+  - Select a conversation (automatically closes after selection)
+- **Animation**: Sidebar slides in from the right with fade-in effect (0.3s)
+- **Structure**: Uses wrapper with overlay layer and absolute-positioned sidebar panel
+- **Z-index**: Set to 200 to appear above other content
+
+**Settings Dialog:**
+- **Opening**: Click the settings button in the application
+- **Closing Methods**:
+  - Click the close button (X icon) in the dialog header
+  - Click the "取消" (Cancel) button
+  - Click the "保存" (Save) button (automatically closes after saving)
+- **Important**: Cannot be closed by clicking outside the dialog
+- **Rationale**: Prevents accidental closure and loss of unsaved settings
+- **Modal Behavior**: Full-screen overlay with centered dialog box
 
 ### Error Handling
 - API errors parsed into user-friendly messages

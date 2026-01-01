@@ -68,10 +68,20 @@ const handleClear = () => {
     emit('clear')
   }
 }
+
+// 点击遮罩层关闭
+const handleOverlayClick = () => {
+  emit('close')
+}
 </script>
 
 <template>
-  <div class="conversation-list">
+  <div class="conversation-list-wrapper">
+    <!-- 遮罩层 -->
+    <div class="overlay" @click="handleOverlayClick"></div>
+
+    <!-- 侧边栏 -->
+    <div class="conversation-list">
     <div class="list-header">
       <h3>对话列表</h3>
       <button class="close-button" @click="$emit('close')" title="关闭">
@@ -125,11 +135,41 @@ const handleClear = () => {
       </div>
     </div>
   </div>
+  </div>
 </template>
 
 <style scoped>
-.conversation-list {
+.conversation-list-wrapper {
   position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 200;
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+}
+
+.conversation-list {
+  position: absolute;
   top: 0;
   right: 0;
   bottom: 0;
@@ -138,7 +178,6 @@ const handleClear = () => {
   box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
-  z-index: 200;
   animation: slideIn 0.3s ease-out;
 }
 

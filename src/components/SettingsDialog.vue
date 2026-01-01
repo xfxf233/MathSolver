@@ -149,17 +149,10 @@ const handleSave = () => {
 const handleClose = () => {
   emit('close')
 }
-
-// 点击遮罩层关闭
-const handleOverlayClick = (e) => {
-  if (e.target === e.currentTarget) {
-    handleClose()
-  }
-}
 </script>
 
 <template>
-  <div class="dialog-overlay" @click="handleOverlayClick">
+  <div class="dialog-overlay">
     <div class="dialog-content">
       <div class="dialog-header">
         <h2>设置</h2>
