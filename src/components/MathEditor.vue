@@ -31,9 +31,28 @@ const isEmpty = computed(() => {
   return editor.value ? isEditorEmpty(editor.value) : true
 })
 
+const copySuccess = ref(false)
+
 const insertMath = () => {
   if (editor.value) {
     editor.value.chain().focus().insertMathNode().run()
+  }
+}
+
+const handleCopy = async () => {
+  if (!editor.value || isEmpty.value || props.disabled) return
+
+  const content = extractQuestionFromEditor(editor.value)
+  if (content) {
+    try {
+      await navigator.clipboard.writeText(content)
+      copySuccess.value = true
+      setTimeout(() => {
+        copySuccess.value = false
+      }, 2000)
+    } catch (err) {
+      console.error('复制失败:', err)
+    }
   }
 }
 
@@ -74,6 +93,23 @@ defineExpose({
       >
         <span class="icon">ƒₓ</span>
         插入公式
+      </button>
+
+      <!-- Copy button -->
+      <button
+        class="toolbar-button copy-button"
+        @click="handleCopy"
+        :disabled="disabled || isEmpty"
+        :title="copySuccess ? '已复制' : '复制题目'"
+      >
+        <svg v-if="!copySuccess" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+        </svg>
+        <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+        {{ copySuccess ? '已复制' : '复制' }}
       </button>
 
       <!-- Send button -->
@@ -145,6 +181,21 @@ defineExpose({
   font-size: 18px;
   font-weight: bold;
   color: #4a90e2;
+}
+
+.copy-button {
+  color: #059669;
+  border-color: #059669;
+}
+
+.copy-button:hover:not(:disabled) {
+  background: #ecfdf5;
+  border-color: #047857;
+}
+
+.copy-button:disabled {
+  color: #9ca3af;
+  border-color: #d1d5db;
 }
 
 .send-button {
