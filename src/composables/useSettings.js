@@ -8,7 +8,8 @@ const settings = ref({
   user: {
     nickname: '你',
     backgroundImage: '',
-    backgroundOpacity: 0.3
+    backgroundOpacity: 0.3,
+    messageOpacity: 0.95
   },
   // API 设置
   api: {
@@ -60,7 +61,8 @@ const resetSettings = () => {
     user: {
       nickname: '你',
       backgroundImage: '',
-      backgroundOpacity: 0.3
+      backgroundOpacity: 0.3,
+      messageOpacity: 0.95
     },
     api: {
       endpoint: 'https://api.openai.com/v1/chat/completions',

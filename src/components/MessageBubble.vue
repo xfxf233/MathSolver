@@ -1,5 +1,5 @@
 <template>
-  <div class="message-bubble" :class="{ 'user': isUser, 'assistant': !isUser }">
+  <div class="message-bubble" :class="{ 'user': isUser, 'assistant': !isUser }" :style="bubbleStyle">
     <div class="message-header">
       <span class="role-label">{{ isUser ? userNickname : 'AI' }}</span>
       <span class="timestamp">{{ formatTime(message.timestamp) }}</span>
@@ -82,6 +82,14 @@ const isUser = computed(() => props.message.role === 'user')
 // Get user nickname from settings
 const userNickname = computed(() => settings.value.user.nickname || '你')
 
+// Get message opacity from settings
+const messageOpacity = computed(() => settings.value.user.messageOpacity || 0.95)
+
+// Apply opacity to bubble style
+const bubbleStyle = computed(() => ({
+  opacity: messageOpacity.value
+}))
+
 // Check if reasoning exists
 const hasReasoning = computed(() =>
   props.message.reasoning && props.message.reasoning.trim().length > 0
@@ -129,7 +137,6 @@ const formatTime = (timestamp) => {
     transform: translateY(10px);
   }
   to {
-    opacity: 1;
     transform: translateY(0);
   }
 }

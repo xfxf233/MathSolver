@@ -12,7 +12,8 @@ const formData = ref({
   user: {
     nickname: settings.value.user.nickname,
     backgroundImage: settings.value.user.backgroundImage || '',
-    backgroundOpacity: settings.value.user.backgroundOpacity || 0.3
+    backgroundOpacity: settings.value.user.backgroundOpacity || 0.3,
+    messageOpacity: settings.value.user.messageOpacity || 0.95
   },
   api: {
     endpoint: settings.value.api.endpoint,
@@ -259,6 +260,20 @@ const handleOverlayClick = (e) => {
               class="range-input"
             />
             <span class="form-hint">调节背景图片的透明度</span>
+          </div>
+
+          <div class="form-group">
+            <label for="messageOpacity">消息透明度: {{ (formData.user.messageOpacity * 100).toFixed(0) }}%</label>
+            <input
+              id="messageOpacity"
+              v-model.number="formData.user.messageOpacity"
+              type="range"
+              min="0.5"
+              max="1"
+              step="0.05"
+              class="range-input"
+            />
+            <span class="form-hint">调节消息气泡的透明度，可以透过消息看到背景</span>
           </div>
         </div>
 
