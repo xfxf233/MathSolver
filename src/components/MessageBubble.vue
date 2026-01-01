@@ -1,7 +1,7 @@
 <template>
-  <div class="message-bubble" :class="{ 'user': isUser, 'assistant': !isUser }" :style="bubbleStyle">
+  <div class="message-bubble" :class="{ 'user': isUser, 'assistant': !isUser }" :style="isUser ? bubbleStyle : aiBubbleStyle">
     <div class="message-header">
-      <span class="role-label">{{ isUser ? userNickname : 'AI' }}</span>
+      <span class="role-label">{{ isUser ? userNickname : aiNickname }}</span>
       <span class="timestamp">{{ formatTime(message.timestamp) }}</span>
     </div>
 
@@ -64,6 +64,7 @@
 import { ref, computed } from 'vue'
 import { useMarkdownRenderer } from '../composables/useMarkdownRenderer'
 import { useSettings } from '../composables/useSettings'
+import { useConversations } from '../composables/useConversations'
 
 const props = defineProps({
   message: {
@@ -75,12 +76,26 @@ const props = defineProps({
 defineEmits(['copy', 'delete'])
 
 const { render } = useMarkdownRenderer()
-const { settings } = useSettings()
+const { settings, getAllPersonas } = useSettings()
+const { activeConversation } = useConversations()
 
 const isUser = computed(() => props.message.role === 'user')
 
 // Get user nickname from settings
 const userNickname = computed(() => settings.value.user.nickname || '你')
+
+// Get conversation persona
+const conversationPersona = computed(() => {
+  const personaId = activeConversation.value?.personaId
+  if (!personaId) return null
+  const allPersonas = getAllPersonas()
+  return allPersonas.find(p => p.id === personaId)
+})
+
+// AI nickname
+const aiNickname = computed(() => {
+  return conversationPersona.value?.nickname || 'AI'
+})
 
 // Get message opacity from settings
 const messageOpacity = computed(() => settings.value.user.messageOpacity || 0.95)
@@ -89,6 +104,16 @@ const messageOpacity = computed(() => settings.value.user.messageOpacity || 0.95
 const bubbleStyle = computed(() => ({
   opacity: messageOpacity.value
 }))
+
+// AI bubble style with persona color
+const aiBubbleStyle = computed(() => {
+  const style = { opacity: messageOpacity.value }
+  if (!isUser.value && conversationPersona.value) {
+    style.borderColor = conversationPersona.value.color
+    style.borderWidth = '2px'
+  }
+  return style
+})
 
 // Check if reasoning exists
 const hasReasoning = computed(() =>

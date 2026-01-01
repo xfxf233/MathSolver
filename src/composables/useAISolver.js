@@ -9,7 +9,7 @@ const error = ref(null)
 const currentStreamingMessageId = ref(null)
 
 export function useAISolver() {
-  const { settings } = useSettings()
+  const { settings, getActivePersona } = useSettings()
   const {
     activeConversation,
     addUserMessage,
@@ -17,7 +17,8 @@ export function useAISolver() {
     updateAssistantMessage,
     deleteMessage,
     saveCurrentConversation,
-    updateConversationModel
+    updateConversationModel,
+    updateConversationPersona
   } = useConversations()
 
   /**
@@ -48,6 +49,9 @@ export function useAISolver() {
       // Add user message to conversation
       addUserMessage(question)
 
+      // Get active persona
+      const activePersona = getActivePersona()
+
       // Create empty assistant message for streaming
       const assistantMessageId = addAssistantMessage('')
       currentStreamingMessageId.value = assistantMessageId
@@ -60,12 +64,13 @@ export function useAISolver() {
           content: m.content
         }))
 
-      // Update conversation model if not set
+      // Update conversation model and persona if not set
       updateConversationModel(settings.value.api.model)
+      updateConversationPersona(activePersona.id)
 
-      // Stream response
+      // Stream response with persona's system prompt
       const service = new AIService(settings.value.api)
-      const generator = service.solveMath(messages)
+      const generator = service.solveMath(messages, activePersona.systemPrompt)
 
       let fullContent = ''
       let fullReasoning = ''

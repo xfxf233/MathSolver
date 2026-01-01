@@ -46,43 +46,59 @@ The app follows a component-based architecture with composables for shared logic
 **Key Components:**
 - `MathEditor.vue` - TipTap editor with custom MathNode extension for inline LaTeX, includes send button
 - `MathNodeView.vue` - Vue component rendering MathLive widgets within the editor
-- `ConversationPanel.vue` - Main chat interface managing conversation display, new conversation creation, conversation list, and smart scrolling with quick navigation buttons
-- `MessageBubble.vue` - Individual message display component with copy/delete actions, renders both user and AI messages with Markdown + KaTeX support, includes collapsible reasoning section for AI thinking process, displays custom user nickname, supports adjustable opacity for transparency effect
+- `ConversationPanel.vue` - Main chat interface managing conversation display, new conversation creation, conversation list, smart scrolling with quick navigation buttons, and AI persona switching confirmation
+- `MessageBubble.vue` - Individual message display component with copy/delete actions, renders both user and AI messages with Markdown + KaTeX support, includes collapsible reasoning section for AI thinking process, displays custom user nickname and AI persona nickname with color-coded borders, supports adjustable opacity for transparency effect
 - `ConversationList.vue` - Sidebar for viewing and switching between conversations, includes semi-transparent overlay that closes the sidebar when clicked outside
-- `SettingsDialog.vue` - Configuration dialog for user settings (nickname, background image, background opacity, message opacity) and API settings, organized in sections, can only be closed via close button or cancel/save buttons (not by clicking outside)
+- `SettingsDialog.vue` - Configuration dialog for user settings (nickname, background image, background opacity, message opacity), AI persona settings (select/create/edit/delete personas), and API settings, organized in sections, can only be closed via close button or cancel/save buttons (not by clicking outside)
+- `PersonaEditor.vue` - Dialog for creating and editing AI personas with customizable name, nickname, avatar, color, tone (formal/casual/encouraging), and system prompt, includes preset templates for quick setup
+- `PersonaSwitcher.vue` - Confirmation dialog shown when switching AI personas with an active conversation, offers options to apply to current conversation or only new conversations
 - `ImageCropper.vue` - Interactive image cropper for adjusting background images with drag, zoom, and reset functionality
 - `ResizeDivider.vue` - Draggable divider supporting both horizontal (desktop) and vertical (mobile) directions, with mouse and touch event support for adjusting panel sizes
 
 ### Composables (Shared Logic)
 
 **`useSettings.js`** - Singleton pattern for application settings
-- Manages user settings (nickname, background image, background opacity, message opacity) and API settings (endpoint, key, model, temperature, maxTokens)
+- Manages user settings (nickname, background image, background opacity, message opacity), AI persona settings, and API settings (endpoint, key, model, temperature, maxTokens)
 - Persists settings to localStorage under key `mathsolver_settings`
 - Settings structure:
   - `user`: { nickname: '你', backgroundImage: '', backgroundOpacity: 0.3, messageOpacity: 0.95 }
+  - `personas`: { activePersonaId: 'math-tutor', presets: [...], custom: [...] }
   - `api`: { endpoint, apiKey, model, temperature, maxTokens }
 - Default API endpoint: `https://api.openai.com/v1/chat/completions`
 - Default model: `gpt-4o-mini`
+- Persona management functions:
+  - `initializeDefaultPersonas()` - Initializes two default personas (数学导师, 学习伙伴)
+  - `getActivePersona()` - Returns currently active persona object
+  - `setActivePersona(id)` - Sets active persona by ID
+  - `getAllPersonas()` - Returns all personas (presets + custom)
+  - `createCustomPersona(persona)` - Creates new custom persona
+  - `updateCustomPersona(id, updates)` - Updates existing custom persona
+  - `deleteCustomPersona(id)` - Deletes custom persona
+- Includes data migration logic for backward compatibility
 
 **`useConversations.js`** - Conversation state management (singleton)
 - Manages all conversation threads and active conversation state
 - Stores up to 50 conversations in localStorage under key `mathsolver_conversations`
-- Each conversation contains: id, title, messages array, model, createdAt, updatedAt
+- Each conversation contains: id, title, messages array, personaId, model, createdAt, updatedAt
 - Each message contains: id, role (user/assistant), content, reasoning (optional), timestamp
 - The `reasoning` field stores AI model's thinking process (for models like o1/o3)
+- The `personaId` field links conversation to the AI persona used
 - Provides CRUD operations: createConversation, deleteConversation, setActiveConversation
 - Message operations: addUserMessage, addAssistantMessage, updateAssistantMessage, deleteMessage
+- Persona operations: updateConversationPersona (first time only), switchConversationPersona (allows multiple switches)
 - Auto-generates conversation titles from first user message
 - Clears old `mathsolver_history` data on first load
-- Includes data migration logic to add `reasoning` field to old messages
+- Includes data migration logic to add `reasoning` field and `personaId` field to old messages/conversations
 
 **`useAISolver.js`** - AI problem solving logic with conversation integration (singleton)
 - Singleton pattern: shared state across all components
 - Integrates with `useConversations` for multi-turn conversation support
-- Integrates with `useSettings` to access API configuration
+- Integrates with `useSettings` to access API configuration and active AI persona
 - Manages solving state (isSolving, error)
 - Provides `solve()` and `stop()` methods
 - Sends full conversation history to API for context-aware responses
+- Uses active persona's system prompt for AI behavior customization
+- Automatically updates conversation's personaId when solving
 - Handles streaming responses by updating assistant messages in real-time
 - Includes error parsing for common API errors (401, 429, 500, timeout, network)
 - Automatically saves conversation state after streaming completes
@@ -99,11 +115,11 @@ The app follows a component-based architecture with composables for shared logic
 
 **`apiService.js`** - AIService class
 - Handles streaming API requests to OpenAI-compatible endpoints
-- `solveMath(messages)` - Async generator accepting full message history array, yielding structured objects with `content` and `reasoning` fields
+- `solveMath(messages, systemPrompt)` - Async generator accepting full message history array and custom system prompt, yielding structured objects with `content` and `reasoning` fields
+- System prompt is now parameterized to support different AI personas
 - Supports both `reasoning_content` (OpenAI o1/o3) and `reasoning` (other providers) fields
 - `testConnection()` - Validates API configuration
 - Parses SSE (Server-Sent Events) format responses
-- System prompt instructs AI to use Markdown with LaTeX math syntax and remember conversation context
 
 ### Custom TipTap Extension
 
@@ -131,8 +147,8 @@ The app uses Vue 3's Composition API with singleton composables for shared state
 ### Data Persistence
 
 All data is stored in browser localStorage:
-- `mathsolver_settings` - User settings (nickname, backgroundImage, backgroundOpacity, messageOpacity) and API settings (endpoint, apiKey, model, temperature, maxTokens)
-- `mathsolver_conversations` - All conversation threads (max 50 conversations)
+- `mathsolver_settings` - User settings (nickname, backgroundImage, backgroundOpacity, messageOpacity), AI persona settings (activePersonaId, presets, custom), and API settings (endpoint, apiKey, model, temperature, maxTokens)
+- `mathsolver_conversations` - All conversation threads with personaId linking (max 50 conversations)
 - `mathsolver_active_conversation_id` - Currently active conversation ID
 - `mathsolver_layout_width` - Desktop panel width percentage (20%-80%)
 - `mathsolver_mobile_height` - Mobile top panel height percentage (20%-80%)
@@ -186,14 +202,15 @@ All data is stored in browser localStorage:
 1. User types message in TipTap editor with optional math formulas
 2. User clicks "发送" button (send button in editor toolbar)
 3. Content extracted to plain text with LaTeX markers (`$...$` for inline, `$$...$$` for block)
-4. `useAISolver.solve()` adds user message to active conversation
+4. `useAISolver.solve()` retrieves active persona and adds user message to active conversation
 5. User message displayed in MessageBubble with LaTeX rendered via markdown-it + KaTeX
 6. Creates empty assistant message for streaming
-7. Full conversation history sent to API for context-aware response
-8. AI response streams in real-time, updating assistant message
-9. AI message rendered in MessageBubble component with Markdown + KaTeX
-10. Editor automatically clears after successful send
-11. Conversation auto-saves to localStorage
+7. Full conversation history sent to API with active persona's system prompt for context-aware response
+8. Conversation's personaId updated to match active persona
+9. AI response streams in real-time, updating assistant message
+10. AI message rendered in MessageBubble component with Markdown + KaTeX, displaying persona nickname and color
+11. Editor automatically clears after successful send
+12. Conversation auto-saves to localStorage
 
 ### Math Rendering Pipeline
 1. User inputs math via MathLive widget (triggered by "插入公式" button)
@@ -304,6 +321,60 @@ All data is stored in browser localStorage:
 - **Important**: Cannot be closed by clicking outside the dialog
 - **Rationale**: Prevents accidental closure and loss of unsaved settings
 - **Modal Behavior**: Full-screen overlay with centered dialog box
+
+### AI Persona System
+
+The application includes a comprehensive AI persona system that allows users to customize the AI's behavior, appearance, and communication style.
+
+**Persona Structure:**
+Each persona contains:
+- `id` - Unique identifier (e.g., 'math-tutor', 'study-buddy')
+- `name` - Display name (e.g., '数学导师')
+- `nickname` - Short name shown in message bubbles (e.g., 'AI助手')
+- `avatar` - Emoji or character representing the persona (e.g., '🎓')
+- `color` - Theme color for message bubble borders (e.g., '#4a90e2')
+- `tone` - Communication style: 'formal' (正式专业), 'casual' (轻松随和), or 'encouraging' (鼓励支持)
+- `systemPrompt` - Custom system prompt that defines AI behavior
+- `isCustom` - Boolean indicating if it's a user-created persona
+
+**Default Personas:**
+1. **数学导师 (Math Tutor)** - Formal, professional teaching style with structured explanations
+2. **学习伙伴 (Study Buddy)** - Casual, friendly style with encouraging tone
+
+**Persona Management:**
+- Users can select from preset personas or create custom ones
+- Custom personas can be edited and deleted
+- Each conversation is linked to a specific persona via `personaId`
+- When switching personas, users are prompted to choose:
+  - Apply to current conversation (changes AI behavior immediately)
+  - Only use for new conversations (keeps current conversation unchanged)
+
+**PersonaEditor Component:**
+- Full-featured dialog for creating/editing personas
+- Form fields: name, nickname, avatar (emoji picker), color (color picker), tone selector
+- System prompt editor with preset templates for quick setup
+- Responsive design for mobile and desktop
+- Validation to ensure all required fields are filled
+
+**PersonaSwitcher Component:**
+- Confirmation dialog shown when switching personas with an active conversation
+- Displays old and new persona information for comparison
+- Three action buttons:
+  - Cancel - Keep current persona
+  - Only for new conversations - Don't change current conversation
+  - Apply to current conversation - Switch immediately
+
+**Visual Integration:**
+- AI message bubbles display persona nickname instead of generic "AI"
+- Message bubble borders use persona's theme color
+- Persona avatar and color shown in settings dialog
+- Active persona highlighted in settings
+
+**Data Persistence:**
+- All personas stored in `mathsolver_settings` under `personas` key
+- Preset personas cannot be deleted or modified
+- Custom personas persist across sessions
+- Backward compatibility: old conversations default to 'math-tutor' persona
 
 ### Error Handling
 - API errors parsed into user-friendly messages

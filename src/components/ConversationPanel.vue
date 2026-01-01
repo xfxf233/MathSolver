@@ -5,6 +5,7 @@ import { useAISolver } from '../composables/useAISolver'
 import { useSettings } from '../composables/useSettings'
 import MessageBubble from './MessageBubble.vue'
 import ConversationList from './ConversationList.vue'
+import PersonaSwitcher from './PersonaSwitcher.vue'
 
 const {
   conversations,
@@ -14,7 +15,8 @@ const {
   deleteConversation,
   clearAllConversations,
   setActiveConversation,
-  deleteMessage
+  deleteMessage,
+  switchConversationPersona
 } = useConversations()
 
 const { isSolving, error } = useAISolver()
@@ -25,6 +27,33 @@ const messagesContainer = ref(null)
 const isUserScrolling = ref(false)
 const showScrollToTop = ref(false)
 const showScrollToBottom = ref(false)
+
+// Persona switcher state
+const showPersonaSwitcher = ref(false)
+const pendingPersonaChange = ref(null)
+
+// Watch for persona changes
+watch(() => settings.value.personas.activePersonaId, (newId, oldId) => {
+  if (oldId && newId !== oldId && activeConversation.value) {
+    // If current conversation has a persona and it's different, show switcher
+    if (activeConversation.value.personaId &&
+        activeConversation.value.personaId !== newId) {
+      pendingPersonaChange.value = { newId, oldId }
+      showPersonaSwitcher.value = true
+    }
+  }
+})
+
+// Handle persona switch confirmation
+const handlePersonaSwitch = (action) => {
+  if (action === 'current') {
+    switchConversationPersona(pendingPersonaChange.value.newId)
+  }
+  // action === 'new' means do nothing, new conversations will use new persona
+
+  showPersonaSwitcher.value = false
+  pendingPersonaChange.value = null
+}
 
 // Check if user is at the bottom of the scroll container
 const isAtBottom = () => {
@@ -287,6 +316,15 @@ const backgroundStyle = computed(() => {
       @delete="handleDeleteConversation"
       @clear="handleClearConversations"
       @close="toggleConversationList"
+    />
+
+    <!-- Persona Switcher Dialog -->
+    <PersonaSwitcher
+      v-if="showPersonaSwitcher && pendingPersonaChange"
+      :new-persona-id="pendingPersonaChange.newId"
+      :old-persona-id="pendingPersonaChange.oldId"
+      @confirm="handlePersonaSwitch"
+      @cancel="showPersonaSwitcher = false"
     />
   </div>
 </template>

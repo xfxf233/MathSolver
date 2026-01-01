@@ -6,9 +6,10 @@ export class AIService {
   /**
    * 调用AI求解数学问题（流式输出）
    * @param {Array<{role: string, content: string}>} messages - 对话消息数组
+   * @param {string} systemPrompt - 自定义系统提示词
    * @returns {AsyncGenerator<{content: string, reasoning: string}>} - 流式返回的内容和思考过程片段
    */
-  async *solveMath(messages) {
+  async *solveMath(messages, systemPrompt) {
     const response = await fetch(this.config.endpoint, {
       method: 'POST',
       headers: {
@@ -20,7 +21,7 @@ export class AIService {
         messages: [
           {
             role: 'system',
-            content: '你是一个数学解题助手。请用Markdown格式回答，数学公式使用LaTeX语法，行内公式用$...$，块级公式用$$...$$。请分步骤详细解答，确保逻辑清晰。在多轮对话中，请记住之前的上下文。'
+            content: systemPrompt
           },
           ...messages
         ],

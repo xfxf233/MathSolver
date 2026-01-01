@@ -1,11 +1,12 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useSettings } from '../composables/useSettings'
 import ImageCropper from './ImageCropper.vue'
+import PersonaEditor from './PersonaEditor.vue'
 
 const emit = defineEmits(['close'])
 
-const { settings, saveSettings } = useSettings()
+const { settings, saveSettings, getAllPersonas, setActivePersona, deleteCustomPersona } = useSettings()
 
 // 本地表单数据
 const formData = ref({
@@ -14,6 +15,9 @@ const formData = ref({
     backgroundImage: settings.value.user.backgroundImage || '',
     backgroundOpacity: settings.value.user.backgroundOpacity || 0.3,
     messageOpacity: settings.value.user.messageOpacity || 0.95
+  },
+  personas: {
+    activePersonaId: settings.value.personas.activePersonaId
   },
   api: {
     endpoint: settings.value.api.endpoint,
@@ -29,6 +33,52 @@ const saveMessage = ref('')
 const fileInput = ref(null)
 const showCropper = ref(false)
 const tempImageUrl = ref('')
+
+// Persona editor state
+const showPersonaEditor = ref(false)
+const editingPersona = ref(null)
+
+// Persona computed properties
+const allPersonas = computed(() => getAllPersonas())
+const selectedPersona = computed(() =>
+  allPersonas.value.find(p => p.id === formData.value.personas.activePersonaId)
+)
+
+// Persona methods
+const selectPersona = (personaId) => {
+  formData.value.personas.activePersonaId = personaId
+}
+
+const editPersona = (persona) => {
+  editingPersona.value = { ...persona }
+  showPersonaEditor.value = true
+}
+
+const deletePersona = (personaId) => {
+  if (confirm('确定要删除这个自定义形象吗？')) {
+    deleteCustomPersona(personaId)
+    formData.value.personas.activePersonaId = settings.value.personas.activePersonaId
+  }
+}
+
+const handlePersonaSave = () => {
+  showPersonaEditor.value = false
+  editingPersona.value = null
+}
+
+const handlePersonaCancel = () => {
+  showPersonaEditor.value = false
+  editingPersona.value = null
+}
+
+const getToneLabel = (tone) => {
+  const labels = {
+    formal: '正式专业',
+    casual: '轻松随和',
+    encouraging: '鼓励支持'
+  }
+  return labels[tone] || tone
+}
 
 // 计算裁剪框尺寸（考虑裁剪对话框的各种元素占用空间）
 const getCropperSize = () => {
@@ -131,7 +181,9 @@ const triggerFileInput = () => {
 
 const handleSave = () => {
   // 更新配置
-  settings.value = { ...formData.value }
+  settings.value.user = { ...formData.value.user }
+  settings.value.api = { ...formData.value.api }
+  setActivePersona(formData.value.personas.activePersonaId)
 
   // 保存到localStorage
   const success = saveSettings()
@@ -270,6 +322,88 @@ const handleClose = () => {
           </div>
         </div>
 
+        <!-- AI形象设置分组 -->
+        <div class="settings-section">
+          <h3 class="section-title">AI形象设置</h3>
+
+          <!-- 形象选择器 -->
+          <div class="form-group">
+            <label>当前AI形象</label>
+            <div class="persona-selector">
+              <div
+                v-for="persona in allPersonas"
+                :key="persona.id"
+                class="persona-card"
+                :class="{ active: formData.personas.activePersonaId === persona.id }"
+                @click="selectPersona(persona.id)"
+              >
+                <div class="persona-avatar" :style="{ backgroundColor: persona.color }">
+                  {{ persona.avatar }}
+                </div>
+                <div class="persona-info">
+                  <div class="persona-name">{{ persona.name }}</div>
+                  <div class="persona-nickname">{{ persona.nickname }}</div>
+                </div>
+                <div v-if="formData.personas.activePersonaId === persona.id" class="persona-check">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <span class="form-hint">选择AI的对话风格和形象</span>
+          </div>
+
+          <!-- 创建自定义形象按钮 -->
+          <button
+            type="button"
+            class="create-persona-btn"
+            @click="showPersonaEditor = true"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            创建自定义形象
+          </button>
+
+          <!-- 形象详情 -->
+          <div v-if="selectedPersona" class="persona-details">
+            <div class="detail-header">
+              <h4>{{ selectedPersona.name }}</h4>
+              <div v-if="selectedPersona.isCustom" class="detail-actions">
+                <button type="button" @click="editPersona(selectedPersona)" class="icon-btn">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                  </svg>
+                </button>
+                <button type="button" @click="deletePersona(selectedPersona.id)" class="icon-btn delete">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="detail-item">
+              <span class="detail-label">昵称:</span>
+              <span class="detail-value">{{ selectedPersona.nickname }}</span>
+            </div>
+
+            <div class="detail-item">
+              <span class="detail-label">风格:</span>
+              <span class="detail-value">{{ getToneLabel(selectedPersona.tone) }}</span>
+            </div>
+
+            <div class="detail-item">
+              <span class="detail-label">系统提示词:</span>
+              <div class="detail-prompt">{{ selectedPersona.systemPrompt }}</div>
+            </div>
+          </div>
+        </div>
+
         <!-- API 设置分组 -->
         <div class="settings-section">
           <h3 class="section-title">API 设置</h3>
@@ -361,6 +495,14 @@ const handleClose = () => {
         </div>
       </form>
     </div>
+
+    <!-- PersonaEditor对话框 -->
+    <PersonaEditor
+      v-if="showPersonaEditor"
+      :persona="editingPersona"
+      @save="handlePersonaSave"
+      @cancel="handlePersonaCancel"
+    />
   </div>
 </template>
 
@@ -725,6 +867,167 @@ const handleClose = () => {
 
 .button:active {
   transform: scale(0.98);
+}
+
+/* Persona selector styles */
+.persona-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.persona-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.persona-card:hover {
+  border-color: #4a90e2;
+  background: #f9fafb;
+}
+
+.persona-card.active {
+  border-color: #4a90e2;
+  background: #eff6ff;
+}
+
+.persona-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.persona-info {
+  flex: 1;
+}
+
+.persona-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: #1f2937;
+  margin-bottom: 2px;
+}
+
+.persona-nickname {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.persona-check {
+  color: #4a90e2;
+  flex-shrink: 0;
+}
+
+.create-persona-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: white;
+  border: 2px dashed #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 16px;
+}
+
+.create-persona-btn:hover {
+  border-color: #4a90e2;
+  color: #4a90e2;
+  background: #f9fafb;
+}
+
+.persona-details {
+  padding: 16px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  margin-top: 12px;
+}
+
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.detail-header h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.detail-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.icon-btn {
+  padding: 4px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #6b7280;
+  transition: all 0.2s;
+}
+
+.icon-btn:hover {
+  background: #e5e7eb;
+  color: #1f2937;
+}
+
+.icon-btn.delete:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.detail-item {
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.detail-label {
+  font-weight: 500;
+  color: #6b7280;
+  margin-right: 8px;
+}
+
+.detail-value {
+  color: #1f2937;
+}
+
+.detail-prompt {
+  margin-top: 4px;
+  padding: 8px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #4b5563;
+  line-height: 1.5;
+  max-height: 120px;
+  overflow-y: auto;
 }
 
 @media (max-width: 640px) {

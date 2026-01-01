@@ -55,9 +55,10 @@ export function useConversations() {
         if (stored) {
           const parsed = JSON.parse(stored)
 
-          // Migrate old data: add reasoning field to messages that don't have it
+          // Migrate old data: add reasoning field and personaId
           conversations.value = parsed.map(conv => ({
             ...conv,
+            personaId: conv.personaId || 'math-tutor',  // Default to math-tutor for old conversations
             messages: conv.messages.map(msg => ({
               ...msg,
               reasoning: msg.reasoning || ''
@@ -133,6 +134,7 @@ export function useConversations() {
         title: '新对话',
         messages: [],
         model: '',
+        personaId: '',  // Will be set when first message is sent
         createdAt: Date.now(),
         updatedAt: Date.now()
       }
@@ -321,6 +323,29 @@ export function useConversations() {
       }
     }
 
+    /**
+     * Update conversation persona
+     * @param {string} personaId - Persona ID
+     */
+    const updateConversationPersona = (personaId) => {
+      if (activeConversation.value && !activeConversation.value.personaId) {
+        activeConversation.value.personaId = personaId
+        saveConversations()
+      }
+    }
+
+    /**
+     * Switch conversation persona (for existing conversations)
+     * @param {string} personaId - New persona ID
+     */
+    const switchConversationPersona = (personaId) => {
+      if (activeConversation.value) {
+        activeConversation.value.personaId = personaId
+        activeConversation.value.updatedAt = Date.now()
+        saveConversations()
+      }
+    }
+
     // Load conversations on initialization
     loadConversations()
 
@@ -340,6 +365,8 @@ export function useConversations() {
       saveCurrentConversation,
       deleteMessage,
       updateConversationModel,
+      updateConversationPersona,
+      switchConversationPersona,
       loadConversations,
       saveConversations
     }
