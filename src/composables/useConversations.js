@@ -70,11 +70,6 @@ export function useConversations() {
         if (storedActiveId && conversations.value.find(c => c.id === storedActiveId)) {
           activeConversationId.value = storedActiveId
         }
-
-        // Clear old history data on first load
-        if (!stored) {
-          localStorage.removeItem('mathsolver_history')
-        }
       } catch (error) {
         console.error('Failed to load conversations:', error)
         conversations.value = []

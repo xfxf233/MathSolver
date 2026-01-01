@@ -44,6 +44,7 @@ The app follows a component-based architecture with composables for shared logic
 - `ConversationPanel.vue` → Right panel displaying chat-style conversation interface
 
 **Key Components:**
+- `AppHeader.vue` - Application header displaying title and settings button
 - `MathEditor.vue` - TipTap editor with custom MathNode extension for inline LaTeX, includes send button
 - `MathNodeView.vue` - Vue component rendering MathLive widgets within the editor
 - `ConversationPanel.vue` - Main chat interface managing conversation display, new conversation creation, conversation list, smart scrolling with quick navigation buttons, and AI persona switching confirmation
@@ -87,7 +88,6 @@ The app follows a component-based architecture with composables for shared logic
 - Message operations: addUserMessage, addAssistantMessage, updateAssistantMessage, deleteMessage
 - Persona operations: updateConversationPersona (first time only), switchConversationPersona (allows multiple switches)
 - Auto-generates conversation titles from first user message
-- Clears old `mathsolver_history` data on first load
 - Includes data migration logic to add `reasoning` field and `personaId` field to old messages/conversations
 
 **`useAISolver.js`** - AI problem solving logic with conversation integration (singleton)
@@ -203,24 +203,21 @@ All data is stored in browser localStorage:
 2. User clicks "发送" button (send button in editor toolbar)
 3. Content extracted to plain text with LaTeX markers (`$...$` for inline, `$$...$$` for block)
 4. `useAISolver.solve()` retrieves active persona and adds user message to active conversation
-5. User message displayed in MessageBubble with LaTeX rendered via markdown-it + KaTeX
-6. Creates empty assistant message for streaming
-7. Full conversation history sent to API with active persona's system prompt for context-aware response
-8. Conversation's personaId updated to match active persona
-9. AI response streams in real-time, updating assistant message
-10. AI message rendered in MessageBubble component with Markdown + KaTeX, displaying persona nickname and color
-11. Editor automatically clears after successful send
-12. Conversation auto-saves to localStorage
+5. Creates empty assistant message for streaming
+6. Full conversation history sent to API with active persona's system prompt for context-aware response
+7. Conversation's personaId updated to match active persona
+8. AI response streams in real-time, updating assistant message
+9. Both user and AI messages rendered in MessageBubble with Markdown + KaTeX, displaying persona nickname and color
+10. Editor automatically clears after successful send
+11. Conversation auto-saves to localStorage
 
 ### Math Rendering Pipeline
 1. User inputs math via MathLive widget (triggered by "插入公式" button)
 2. LaTeX stored in MathNode's `data-latex` attribute
 3. Content extracted to plain text with LaTeX markers (`$...$` for inline, `$$...$$` for block)
-4. User message sent to API and displayed in MessageBubble with LaTeX rendered via markdown-it + KaTeX
-5. AI response (Markdown + LaTeX) also rendered via markdown-it + KaTeX
-6. Both user and AI messages displayed in MessageBubble component with proper styling
-7. User messages have white text on blue background with adjusted KaTeX styling for readability
-8. Special CSS rule hides extra `<br>` tags after `<section>` to prevent spacing issues with block math
+4. Messages sent to API and displayed in MessageBubble with LaTeX rendered via markdown-it + KaTeX
+5. User messages styled with white text on blue background; AI messages with white background and persona color border
+6. Special CSS rule hides extra `<br>` tags after `<section>` to prevent spacing issues with block math
 
 ### Conversation Management
 - Each conversation has unique ID, auto-generated title, and message array
@@ -271,56 +268,39 @@ All data is stored in browser localStorage:
   - File validation for type and size before processing
 - **Interactive Cropper**: `ImageCropper.vue` component provides image adjustment tools
   - Canvas-based cropper with drag-to-reposition functionality
-  - Mouse wheel and slider controls for zoom (10%-500%)
+  - Mouse wheel and slider controls for zoom
   - Reset button to restore initial fit
-  - Adaptive canvas size: automatically calculates optimal dimensions based on viewport
-  - Desktop: max 600x400px canvas, accounting for dialog overhead (~288px)
-  - Mobile: max 500x350px canvas with responsive adjustments
-  - Exports cropped image as base64 JPEG (90% quality)
+  - Adaptive canvas size based on viewport (responsive for desktop and mobile)
+  - Exports cropped image as base64 JPEG
 - **Live Preview**: Real-time preview in settings dialog shows exact final appearance
-  - Displays complete cropped image with correct aspect ratio (`object-fit: contain`)
+  - Displays cropped image with correct aspect ratio
   - Transparent overlay layer dynamically reflects opacity slider changes
-  - Smooth 0.2s transition animation for opacity adjustments
   - Preview matches actual conversation panel rendering
 - **Opacity Control**: Adjustable transparency slider (0-100%) for background images
 - **Image Management**: Replace or delete background images from settings
 - **Responsive Adaptation**: Background images adapt to panel resizing via ResizeDivider
-- **Storage**: Cropped images stored as base64 in localStorage (`mathsolver_settings`)
+- **Storage**: Cropped images stored as base64 in localStorage
 
 ### Message Transparency
-- **Message Opacity Control**: Users can adjust the transparency of message bubbles to see through to the background
-  - Adjustable via slider in settings dialog (50%-100% range)
-  - Default opacity: 95% (slightly transparent)
-  - Minimum 50% to ensure messages remain readable
-  - Applies to both user messages (blue bubbles) and AI messages (white bubbles)
-- **Implementation**: MessageBubble component reads `messageOpacity` from settings and applies it via inline style
-  - Uses computed property `bubbleStyle` to dynamically bind opacity
-  - CSS animation modified to not override opacity setting (removed `opacity: 1` from animation end state)
-- **Use Case**: Allows users to enjoy custom background images while reading conversations
-- **Persistence**: Setting saved to localStorage and persists across sessions
+- Users can adjust the transparency of message bubbles to see through to the background
+- Adjustable via slider in settings dialog (50%-100% range)
+- Default opacity: 95% (slightly transparent)
+- Applies to both user messages (blue bubbles) and AI messages (white bubbles)
+- Setting saved to localStorage and persists across sessions
 
 ### UI Interaction Behavior
 
 **Conversation List Sidebar:**
-- **Opening**: Click the "对话列表" button in the toolbar to open the sidebar
-- **Overlay**: Semi-transparent dark overlay (30% opacity) appears behind the sidebar
-- **Closing Methods**:
-  - Click anywhere on the overlay (outside the sidebar)
-  - Click the close button (X icon) in the sidebar header
-  - Select a conversation (automatically closes after selection)
-- **Animation**: Sidebar slides in from the right with fade-in effect (0.3s)
-- **Structure**: Uses wrapper with overlay layer and absolute-positioned sidebar panel
-- **Z-index**: Set to 200 to appear above other content
+- Opens via "对话列表" button in toolbar
+- Semi-transparent overlay appears behind sidebar
+- Closes by clicking overlay, close button, or selecting a conversation
+- Slides in from right with fade-in animation
 
 **Settings Dialog:**
-- **Opening**: Click the settings button in the application
-- **Closing Methods**:
-  - Click the close button (X icon) in the dialog header
-  - Click the "取消" (Cancel) button
-  - Click the "保存" (Save) button (automatically closes after saving)
-- **Important**: Cannot be closed by clicking outside the dialog
-- **Rationale**: Prevents accidental closure and loss of unsaved settings
-- **Modal Behavior**: Full-screen overlay with centered dialog box
+- Opens via settings button in application header
+- Closes via close button, "取消" (Cancel), or "保存" (Save) buttons
+- Cannot be closed by clicking outside to prevent accidental closure and loss of unsaved settings
+- Full-screen overlay with centered dialog box
 
 ### AI Persona System
 
