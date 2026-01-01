@@ -47,19 +47,19 @@ The app follows a component-based architecture with composables for shared logic
 - `MathEditor.vue` - TipTap editor with custom MathNode extension for inline LaTeX, includes send button
 - `MathNodeView.vue` - Vue component rendering MathLive widgets within the editor
 - `ConversationPanel.vue` - Main chat interface managing conversation display, new conversation creation, conversation list, and smart scrolling with quick navigation buttons
-- `MessageBubble.vue` - Individual message display component with copy/delete actions, renders both user and AI messages with Markdown + KaTeX support, includes collapsible reasoning section for AI thinking process, displays custom user nickname
+- `MessageBubble.vue` - Individual message display component with copy/delete actions, renders both user and AI messages with Markdown + KaTeX support, includes collapsible reasoning section for AI thinking process, displays custom user nickname, supports adjustable opacity for transparency effect
 - `ConversationList.vue` - Sidebar for viewing and switching between conversations
-- `SettingsDialog.vue` - Configuration dialog for user settings (nickname, background image) and API settings, organized in sections
+- `SettingsDialog.vue` - Configuration dialog for user settings (nickname, background image, background opacity, message opacity) and API settings, organized in sections
 - `ImageCropper.vue` - Interactive image cropper for adjusting background images with drag, zoom, and reset functionality
 - `ResizeDivider.vue` - Draggable divider supporting both horizontal (desktop) and vertical (mobile) directions, with mouse and touch event support for adjusting panel sizes
 
 ### Composables (Shared Logic)
 
 **`useSettings.js`** - Singleton pattern for application settings
-- Manages user settings (nickname, background image, background opacity) and API settings (endpoint, key, model, temperature, maxTokens)
+- Manages user settings (nickname, background image, background opacity, message opacity) and API settings (endpoint, key, model, temperature, maxTokens)
 - Persists settings to localStorage under key `mathsolver_settings`
 - Settings structure:
-  - `user`: { nickname: '你', backgroundImage: '', backgroundOpacity: 0.3 }
+  - `user`: { nickname: '你', backgroundImage: '', backgroundOpacity: 0.3, messageOpacity: 0.95 }
   - `api`: { endpoint, apiKey, model, temperature, maxTokens }
 - Default API endpoint: `https://api.openai.com/v1/chat/completions`
 - Default model: `gpt-4o-mini`
@@ -131,7 +131,7 @@ The app uses Vue 3's Composition API with singleton composables for shared state
 ### Data Persistence
 
 All data is stored in browser localStorage:
-- `mathsolver_settings` - User settings (nickname, backgroundImage, backgroundOpacity) and API settings (endpoint, apiKey, model, temperature, maxTokens)
+- `mathsolver_settings` - User settings (nickname, backgroundImage, backgroundOpacity, messageOpacity) and API settings (endpoint, apiKey, model, temperature, maxTokens)
 - `mathsolver_conversations` - All conversation threads (max 50 conversations)
 - `mathsolver_active_conversation_id` - Currently active conversation ID
 - `mathsolver_layout_width` - Desktop panel width percentage (20%-80%)
@@ -269,6 +269,18 @@ All data is stored in browser localStorage:
 - **Image Management**: Replace or delete background images from settings
 - **Responsive Adaptation**: Background images adapt to panel resizing via ResizeDivider
 - **Storage**: Cropped images stored as base64 in localStorage (`mathsolver_settings`)
+
+### Message Transparency
+- **Message Opacity Control**: Users can adjust the transparency of message bubbles to see through to the background
+  - Adjustable via slider in settings dialog (50%-100% range)
+  - Default opacity: 95% (slightly transparent)
+  - Minimum 50% to ensure messages remain readable
+  - Applies to both user messages (blue bubbles) and AI messages (white bubbles)
+- **Implementation**: MessageBubble component reads `messageOpacity` from settings and applies it via inline style
+  - Uses computed property `bubbleStyle` to dynamically bind opacity
+  - CSS animation modified to not override opacity setting (removed `opacity: 1` from animation end state)
+- **Use Case**: Allows users to enjoy custom background images while reading conversations
+- **Persistence**: Setting saved to localStorage and persists across sessions
 
 ### Error Handling
 - API errors parsed into user-friendly messages
