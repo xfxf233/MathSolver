@@ -215,6 +215,8 @@ const handleOverlayClick = (e) => {
             <!-- 图片预览或上传按钮 -->
             <div v-if="formData.user.backgroundImage" class="image-preview-container">
               <img :src="formData.user.backgroundImage" alt="背景预览" class="image-preview" />
+              <!-- 透明度遮罩层 -->
+              <div class="image-preview-overlay" :style="{ opacity: 1 - formData.user.backgroundOpacity }"></div>
               <div class="image-actions">
                 <button type="button" @click="triggerFileInput" class="image-action-btn">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -577,9 +579,22 @@ const handleOverlayClick = (e) => {
 
 .image-preview {
   width: 100%;
-  height: 200px;
-  object-fit: cover;
+  height: auto;
+  max-height: 300px;
+  object-fit: contain;
   display: block;
+  background: #f3f4f6;
+}
+
+.image-preview-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #f9fafb;
+  pointer-events: none;
+  transition: opacity 0.2s;
 }
 
 .image-actions {

@@ -260,6 +260,11 @@ All data is stored in browser localStorage:
   - Desktop: max 600x400px canvas, accounting for dialog overhead (~288px)
   - Mobile: max 500x350px canvas with responsive adjustments
   - Exports cropped image as base64 JPEG (90% quality)
+- **Live Preview**: Real-time preview in settings dialog shows exact final appearance
+  - Displays complete cropped image with correct aspect ratio (`object-fit: contain`)
+  - Transparent overlay layer dynamically reflects opacity slider changes
+  - Smooth 0.2s transition animation for opacity adjustments
+  - Preview matches actual conversation panel rendering
 - **Opacity Control**: Adjustable transparency slider (0-100%) for background images
 - **Image Management**: Replace or delete background images from settings
 - **Responsive Adaptation**: Background images adapt to panel resizing via ResizeDivider
