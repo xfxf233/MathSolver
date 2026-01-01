@@ -6,7 +6,10 @@ const SETTINGS_KEY = 'mathsolver_settings'
 const settings = ref({
   // 用户设置
   user: {
-    nickname: '你'
+    nickname: '你',
+    backgroundImage: '',
+    backgroundOpacity: 0.3,
+    backgroundSize: 'cover'
   },
   // API 设置
   api: {
@@ -56,7 +59,10 @@ const isApiConfigValid = () => {
 const resetSettings = () => {
   settings.value = {
     user: {
-      nickname: '你'
+      nickname: '你',
+      backgroundImage: '',
+      backgroundOpacity: 0.3,
+      backgroundSize: 'cover'
     },
     api: {
       endpoint: 'https://api.openai.com/v1/chat/completions',

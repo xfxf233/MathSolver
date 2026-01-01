@@ -9,7 +9,10 @@ const { settings, saveSettings } = useSettings()
 // 本地表单数据
 const formData = ref({
   user: {
-    nickname: settings.value.user.nickname
+    nickname: settings.value.user.nickname,
+    backgroundImage: settings.value.user.backgroundImage || '',
+    backgroundOpacity: settings.value.user.backgroundOpacity || 0.3,
+    backgroundSize: settings.value.user.backgroundSize || 'cover'
   },
   api: {
     endpoint: settings.value.api.endpoint,
@@ -22,6 +25,48 @@ const formData = ref({
 
 const showAdvanced = ref(false)
 const saveMessage = ref('')
+const fileInput = ref(null)
+
+// 处理图片上传
+const handleImageUpload = (event) => {
+  const file = event.target.files[0]
+  if (!file) return
+
+  // 验证文件类型
+  if (!file.type.startsWith('image/')) {
+    alert('请选择图片文件')
+    return
+  }
+
+  // 验证文件大小 (限制为5MB)
+  if (file.size > 5 * 1024 * 1024) {
+    alert('图片大小不能超过5MB')
+    return
+  }
+
+  // 读取文件并转换为Base64
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    formData.value.user.backgroundImage = e.target.result
+  }
+  reader.onerror = () => {
+    alert('图片读取失败，请重试')
+  }
+  reader.readAsDataURL(file)
+}
+
+// 清除背景图片
+const clearBackgroundImage = () => {
+  formData.value.user.backgroundImage = ''
+  if (fileInput.value) {
+    fileInput.value.value = ''
+  }
+}
+
+// 触发文件选择
+const triggerFileInput = () => {
+  fileInput.value?.click()
+}
 
 const handleSave = () => {
   // 更新配置
@@ -80,6 +125,79 @@ const handleOverlayClick = (e) => {
               maxlength="20"
             />
             <span class="form-hint">显示在消息气泡上的名称</span>
+          </div>
+
+          <div class="form-group">
+            <label for="backgroundImage">对话背景图片</label>
+
+            <!-- 隐藏的文件输入 -->
+            <input
+              ref="fileInput"
+              type="file"
+              accept="image/*"
+              @change="handleImageUpload"
+              style="display: none"
+            />
+
+            <!-- 图片预览或上传按钮 -->
+            <div v-if="formData.user.backgroundImage" class="image-preview-container">
+              <img :src="formData.user.backgroundImage" alt="背景预览" class="image-preview" />
+              <div class="image-actions">
+                <button type="button" @click="triggerFileInput" class="image-action-btn">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                  </svg>
+                  更换
+                </button>
+                <button type="button" @click="clearBackgroundImage" class="image-action-btn delete-btn">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  </svg>
+                  删除
+                </button>
+              </div>
+            </div>
+
+            <button v-else type="button" @click="triggerFileInput" class="upload-btn">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+              <span>选择图片</span>
+            </button>
+
+            <span class="form-hint">支持JPG、PNG、GIF等格式，大小不超过5MB</span>
+          </div>
+
+          <div class="form-group">
+            <label for="backgroundOpacity">背景透明度: {{ (formData.user.backgroundOpacity * 100).toFixed(0) }}%</label>
+            <input
+              id="backgroundOpacity"
+              v-model.number="formData.user.backgroundOpacity"
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              class="range-input"
+            />
+            <span class="form-hint">调节背景图片的透明度</span>
+          </div>
+
+          <div class="form-group">
+            <label for="backgroundSize">背景显示模式</label>
+            <select
+              id="backgroundSize"
+              v-model="formData.user.backgroundSize"
+              class="select-input"
+            >
+              <option value="cover">覆盖 (Cover)</option>
+              <option value="contain">包含 (Contain)</option>
+              <option value="repeat">平铺 (Repeat)</option>
+            </select>
+            <span class="form-hint">选择背景图片的显示方式</span>
           </div>
         </div>
 
@@ -284,6 +402,140 @@ const handleOverlayClick = (e) => {
   outline: none;
   border-color: #4a90e2;
   box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+}
+
+.range-input {
+  width: 100%;
+  height: 6px;
+  padding: 0;
+  background: #e5e7eb;
+  border: none;
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+}
+
+.range-input::-webkit-slider-thumb {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  background: #4a90e2;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.range-input::-webkit-slider-thumb:hover {
+  background: #3b7dd6;
+  transform: scale(1.1);
+}
+
+.range-input::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: #4a90e2;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.range-input::-moz-range-thumb:hover {
+  background: #3b7dd6;
+  transform: scale(1.1);
+}
+
+.select-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #1f2937;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.select-input:focus {
+  outline: none;
+  border-color: #4a90e2;
+  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+}
+
+.upload-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 32px 16px;
+  background: #f9fafb;
+  border: 2px dashed #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.upload-btn:hover {
+  background: #f3f4f6;
+  border-color: #4a90e2;
+  color: #4a90e2;
+}
+
+.image-preview-container {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+}
+
+.image-preview {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  display: block;
+}
+
+.image-actions {
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  background: white;
+  border-top: 1px solid #e5e7eb;
+}
+
+.image-action-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.image-action-btn:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.image-action-btn.delete-btn:hover {
+  background: #fee2e2;
+  border-color: #fecaca;
+  color: #dc2626;
+}
+
+.image-action-btn.delete-btn:hover svg {
+  stroke: #dc2626;
 }
 
 .form-hint {

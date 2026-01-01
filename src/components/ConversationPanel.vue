@@ -1,7 +1,8 @@
 <script setup>
-import { ref, watch, nextTick, onMounted, onUnmounted } from 'vue'
+import { ref, watch, nextTick, onMounted, onUnmounted, computed } from 'vue'
 import { useConversations } from '../composables/useConversations'
 import { useAISolver } from '../composables/useAISolver'
+import { useSettings } from '../composables/useSettings'
 import MessageBubble from './MessageBubble.vue'
 import ConversationList from './ConversationList.vue'
 
@@ -17,6 +18,7 @@ const {
 } = useConversations()
 
 const { isSolving, error } = useAISolver()
+const { settings } = useSettings()
 
 const showConversationList = ref(false)
 const messagesContainer = ref(null)
@@ -151,6 +153,45 @@ const handleDeleteMessage = (messageId) => {
 const dismissError = () => {
   error.value = null
 }
+
+// 计算背景样式
+const backgroundStyle = computed(() => {
+  const { backgroundImage, backgroundOpacity, backgroundSize } = settings.value.user
+
+  if (!backgroundImage) {
+    return {
+      background: '#f9fafb'
+    }
+  }
+
+  // 计算遮罩透明度（反向）
+  const overlayOpacity = 1 - backgroundOpacity
+
+  const style = {
+    backgroundPosition: 'center',
+    backgroundAttachment: 'fixed'
+  }
+
+  if (backgroundSize === 'repeat') {
+    style.backgroundRepeat = 'repeat'
+    style.backgroundSize = 'auto'
+  } else {
+    style.backgroundRepeat = 'no-repeat'
+    style.backgroundSize = backgroundSize
+  }
+
+  // 使用多层背景：半透明遮罩 + 背景图片
+  style.backgroundImage = `linear-gradient(rgba(249, 250, 251, ${overlayOpacity}), rgba(249, 250, 251, ${overlayOpacity})), url(${backgroundImage})`
+
+  return style
+})
+
+// 不再需要单独的遮罩透明度计算
+// const backgroundOverlayOpacity = computed(() => {
+//   const { backgroundImage, backgroundOpacity } = settings.value.user
+//   if (!backgroundImage) return 0
+//   return 1 - backgroundOpacity
+// })
 </script>
 
 <template>
@@ -180,7 +221,7 @@ const dismissError = () => {
     </div>
 
     <!-- Messages Area -->
-    <div class="messages-container" ref="messagesContainer">
+    <div class="messages-container" ref="messagesContainer" :style="backgroundStyle">
       <div v-if="!activeConversation || activeConversation.messages.length === 0"
            class="empty-state">
         <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -326,6 +367,13 @@ const dismissError = () => {
   padding: 16px;
   background: #f9fafb;
   scroll-behavior: smooth;
+  position: relative;
+}
+
+.empty-state,
+.messages-list {
+  position: relative;
+  z-index: 1;
 }
 
 .scroll-buttons {
