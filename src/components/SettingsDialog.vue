@@ -29,27 +29,36 @@ const fileInput = ref(null)
 const showCropper = ref(false)
 const tempImageUrl = ref('')
 
-// 计算裁剪框尺寸（匹配对话窗口实际大小）
+// 计算裁剪框尺寸（考虑裁剪对话框的各种元素占用空间）
 const getCropperSize = () => {
   const isMobile = window.innerWidth < 768
 
-  if (isMobile) {
-    // 移动端：对话窗口占据全宽，高度约60%（默认分割比例）
-    const savedHeight = localStorage.getItem('mathsolver_mobile_height')
-    const heightPercent = savedHeight ? parseFloat(savedHeight) / 100 : 0.6
+  // 裁剪对话框的固定开销：
+  // - 对话框 padding: 24px * 2 = 48px
+  // - header 高度: ~60px
+  // - controls 高度: ~80px
+  // - footer 高度: ~60px
+  // - canvas-container padding: 20px * 2 = 40px
+  // - 额外边距: ~40px
+  // 总计约: 288px
+  const dialogOverhead = 288
 
+  // 裁剪对话框的最大高度是 90vh
+  const maxDialogHeight = window.innerHeight * 0.9
+  // canvas 的最大可用高度
+  const maxCanvasHeight = maxDialogHeight - dialogOverhead
+
+  if (isMobile) {
+    // 移动端：限制宽度和高度
     return {
-      width: Math.min(window.innerWidth - 40, 600), // 减去padding，最大600px
-      height: Math.floor((window.innerHeight - 100) * heightPercent) // 减去toolbar等
+      width: Math.min(window.innerWidth - 80, 500), // 减去更多边距，最大500px
+      height: Math.min(maxCanvasHeight, 350) // 限制最大高度为350px
     }
   } else {
-    // 桌面端：对话窗口占据右侧，宽度约50%（默认分割比例）
-    const savedWidth = localStorage.getItem('mathsolver_layout_width')
-    const widthPercent = savedWidth ? parseFloat(savedWidth) / 100 : 0.5
-
+    // 桌面端：使用合理的固定尺寸
     return {
-      width: Math.floor((window.innerWidth - 40) * (1 - widthPercent)), // 右侧面板宽度
-      height: window.innerHeight - 150 // 减去toolbar等
+      width: Math.min(window.innerWidth - 200, 600), // 减去边距，最大600px
+      height: Math.min(maxCanvasHeight, 400) // 限制最大高度为400px
     }
   }
 }

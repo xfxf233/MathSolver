@@ -49,16 +49,17 @@ The app follows a component-based architecture with composables for shared logic
 - `ConversationPanel.vue` - Main chat interface managing conversation display, new conversation creation, conversation list, and smart scrolling with quick navigation buttons
 - `MessageBubble.vue` - Individual message display component with copy/delete actions, renders both user and AI messages with Markdown + KaTeX support, includes collapsible reasoning section for AI thinking process, displays custom user nickname
 - `ConversationList.vue` - Sidebar for viewing and switching between conversations
-- `SettingsDialog.vue` - Configuration dialog for user settings and API settings, organized in sections
+- `SettingsDialog.vue` - Configuration dialog for user settings (nickname, background image) and API settings, organized in sections
+- `ImageCropper.vue` - Interactive image cropper for adjusting background images with drag, zoom, and reset functionality
 - `ResizeDivider.vue` - Draggable divider supporting both horizontal (desktop) and vertical (mobile) directions, with mouse and touch event support for adjusting panel sizes
 
 ### Composables (Shared Logic)
 
 **`useSettings.js`** - Singleton pattern for application settings
-- Manages user settings (nickname) and API settings (endpoint, key, model, temperature, maxTokens)
+- Manages user settings (nickname, background image, background opacity) and API settings (endpoint, key, model, temperature, maxTokens)
 - Persists settings to localStorage under key `mathsolver_settings`
 - Settings structure:
-  - `user`: { nickname: '你' }
+  - `user`: { nickname: '你', backgroundImage: '', backgroundOpacity: 0.3 }
   - `api`: { endpoint, apiKey, model, temperature, maxTokens }
 - Default API endpoint: `https://api.openai.com/v1/chat/completions`
 - Default model: `gpt-4o-mini`
@@ -130,7 +131,7 @@ The app uses Vue 3's Composition API with singleton composables for shared state
 ### Data Persistence
 
 All data is stored in browser localStorage:
-- `mathsolver_settings` - User settings (nickname) and API settings (endpoint, apiKey, model, temperature, maxTokens)
+- `mathsolver_settings` - User settings (nickname, backgroundImage, backgroundOpacity) and API settings (endpoint, apiKey, model, temperature, maxTokens)
 - `mathsolver_conversations` - All conversation threads (max 50 conversations)
 - `mathsolver_active_conversation_id` - Currently active conversation ID
 - `mathsolver_layout_width` - Desktop panel width percentage (20%-80%)
@@ -246,6 +247,23 @@ All data is stored in browser localStorage:
 - Real-time streaming: reasoning updates trigger auto-scroll to keep latest content visible
 - Backward compatible: models without reasoning field display normally
 - Data migration: old messages automatically get empty `reasoning` field on load
+
+### Background Image Customization
+- **Image Upload**: Users can upload custom background images for the conversation panel
+  - Supports JPG, PNG, GIF formats with 5MB size limit
+  - File validation for type and size before processing
+- **Interactive Cropper**: `ImageCropper.vue` component provides image adjustment tools
+  - Canvas-based cropper with drag-to-reposition functionality
+  - Mouse wheel and slider controls for zoom (10%-500%)
+  - Reset button to restore initial fit
+  - Adaptive canvas size: automatically calculates optimal dimensions based on viewport
+  - Desktop: max 600x400px canvas, accounting for dialog overhead (~288px)
+  - Mobile: max 500x350px canvas with responsive adjustments
+  - Exports cropped image as base64 JPEG (90% quality)
+- **Opacity Control**: Adjustable transparency slider (0-100%) for background images
+- **Image Management**: Replace or delete background images from settings
+- **Responsive Adaptation**: Background images adapt to panel resizing via ResizeDivider
+- **Storage**: Cropped images stored as base64 in localStorage (`mathsolver_settings`)
 
 ### Error Handling
 - API errors parsed into user-friendly messages
