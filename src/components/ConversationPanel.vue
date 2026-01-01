@@ -156,7 +156,7 @@ const dismissError = () => {
 
 // 计算背景样式
 const backgroundStyle = computed(() => {
-  const { backgroundImage, backgroundOpacity, backgroundSize } = settings.value.user
+  const { backgroundImage, backgroundOpacity } = settings.value.user
 
   if (!backgroundImage) {
     return {
@@ -168,16 +168,10 @@ const backgroundStyle = computed(() => {
   const overlayOpacity = 1 - backgroundOpacity
 
   const style = {
-    backgroundPosition: 'center',
-    backgroundAttachment: 'fixed'
-  }
-
-  if (backgroundSize === 'repeat') {
-    style.backgroundRepeat = 'repeat'
-    style.backgroundSize = 'auto'
-  } else {
-    style.backgroundRepeat = 'no-repeat'
-    style.backgroundSize = backgroundSize
+    backgroundPosition: 'center center',
+    backgroundAttachment: 'scroll',  // 跟随容器，不固定在视口
+    backgroundRepeat: 'no-repeat',
+    backgroundSize: 'cover'
   }
 
   // 使用多层背景：半透明遮罩 + 背景图片

@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useSettings } from '../composables/useSettings'
+import ImageCropper from './ImageCropper.vue'
 
 const emit = defineEmits(['close'])
 
@@ -11,8 +12,7 @@ const formData = ref({
   user: {
     nickname: settings.value.user.nickname,
     backgroundImage: settings.value.user.backgroundImage || '',
-    backgroundOpacity: settings.value.user.backgroundOpacity || 0.3,
-    backgroundSize: settings.value.user.backgroundSize || 'cover'
+    backgroundOpacity: settings.value.user.backgroundOpacity || 0.3
   },
   api: {
     endpoint: settings.value.api.endpoint,
@@ -26,6 +26,35 @@ const formData = ref({
 const showAdvanced = ref(false)
 const saveMessage = ref('')
 const fileInput = ref(null)
+const showCropper = ref(false)
+const tempImageUrl = ref('')
+
+// 计算裁剪框尺寸（匹配对话窗口实际大小）
+const getCropperSize = () => {
+  const isMobile = window.innerWidth < 768
+
+  if (isMobile) {
+    // 移动端：对话窗口占据全宽，高度约60%（默认分割比例）
+    const savedHeight = localStorage.getItem('mathsolver_mobile_height')
+    const heightPercent = savedHeight ? parseFloat(savedHeight) / 100 : 0.6
+
+    return {
+      width: Math.min(window.innerWidth - 40, 600), // 减去padding，最大600px
+      height: Math.floor((window.innerHeight - 100) * heightPercent) // 减去toolbar等
+    }
+  } else {
+    // 桌面端：对话窗口占据右侧，宽度约50%（默认分割比例）
+    const savedWidth = localStorage.getItem('mathsolver_layout_width')
+    const widthPercent = savedWidth ? parseFloat(savedWidth) / 100 : 0.5
+
+    return {
+      width: Math.floor((window.innerWidth - 40) * (1 - widthPercent)), // 右侧面板宽度
+      height: window.innerHeight - 150 // 减去toolbar等
+    }
+  }
+}
+
+const cropperSize = ref(getCropperSize())
 
 // 处理图片上传
 const handleImageUpload = (event) => {
@@ -44,15 +73,37 @@ const handleImageUpload = (event) => {
     return
   }
 
-  // 读取文件并转换为Base64
+  // 读取文件并显示裁剪器
   const reader = new FileReader()
   reader.onload = (e) => {
-    formData.value.user.backgroundImage = e.target.result
+    tempImageUrl.value = e.target.result
+    // 更新裁剪框尺寸
+    cropperSize.value = getCropperSize()
+    showCropper.value = true
   }
   reader.onerror = () => {
     alert('图片读取失败，请重试')
   }
   reader.readAsDataURL(file)
+}
+
+// 确认裁剪
+const handleCropConfirm = (croppedImage) => {
+  formData.value.user.backgroundImage = croppedImage
+  showCropper.value = false
+  tempImageUrl.value = ''
+  if (fileInput.value) {
+    fileInput.value.value = ''
+  }
+}
+
+// 取消裁剪
+const handleCropCancel = () => {
+  showCropper.value = false
+  tempImageUrl.value = ''
+  if (fileInput.value) {
+    fileInput.value.value = ''
+  }
 }
 
 // 清除背景图片
@@ -108,6 +159,19 @@ const handleOverlayClick = (e) => {
             <line x1="6" y1="6" x2="18" y2="18"></line>
           </svg>
         </button>
+      </div>
+
+      <!-- 图片裁剪器 -->
+      <div v-if="showCropper" class="cropper-overlay">
+        <div class="cropper-dialog">
+          <ImageCropper
+            :imageUrl="tempImageUrl"
+            :cropWidth="cropperSize.width"
+            :cropHeight="cropperSize.height"
+            @confirm="handleCropConfirm"
+            @cancel="handleCropCancel"
+          />
+        </div>
       </div>
 
       <form @submit.prevent="handleSave" class="dialog-form">
@@ -184,20 +248,6 @@ const handleOverlayClick = (e) => {
               class="range-input"
             />
             <span class="form-hint">调节背景图片的透明度</span>
-          </div>
-
-          <div class="form-group">
-            <label for="backgroundSize">背景显示模式</label>
-            <select
-              id="backgroundSize"
-              v-model="formData.user.backgroundSize"
-              class="select-input"
-            >
-              <option value="cover">覆盖 (Cover)</option>
-              <option value="contain">包含 (Contain)</option>
-              <option value="repeat">平铺 (Repeat)</option>
-            </select>
-            <span class="form-hint">选择背景图片的显示方式</span>
           </div>
         </div>
 
@@ -308,6 +358,30 @@ const handleOverlayClick = (e) => {
   justify-content: center;
   z-index: 1000;
   padding: 20px;
+}
+
+.cropper-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1001;
+  padding: 20px;
+}
+
+.cropper-dialog {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 800px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 .dialog-content {
