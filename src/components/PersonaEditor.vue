@@ -77,25 +77,6 @@
           </div>
         </div>
 
-        <!-- 对话风格 -->
-        <div class="form-section">
-          <h4>对话风格</h4>
-
-          <div class="tone-selector">
-            <div
-              v-for="tone in toneOptions"
-              :key="tone.value"
-              class="tone-option"
-              :class="{ selected: formData.tone === tone.value }"
-              @click="formData.tone = tone.value"
-            >
-              <div class="tone-icon">{{ tone.icon }}</div>
-              <div class="tone-label">{{ tone.label }}</div>
-              <div class="tone-desc">{{ tone.description }}</div>
-            </div>
-          </div>
-        </div>
-
         <!-- 系统提示词 -->
         <div class="form-section">
           <h4>系统提示词</h4>
@@ -164,19 +145,12 @@ const formData = ref({
   nickname: props.persona?.nickname || '',
   avatar: props.persona?.avatar || '🤖',
   color: props.persona?.color || '#4a90e2',
-  tone: props.persona?.tone || 'formal',
   systemPrompt: props.persona?.systemPrompt || ''
 })
 
 const avatarOptions = ['🤖', '👨‍🏫', '👩‍🏫', '🤝', '💡', '🎓', '📚', '✨', '🌟', '🎯', '🔬', '📖']
 
 const colorOptions = ['#4a90e2', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16']
-
-const toneOptions = [
-  { value: 'formal', label: '正式专业', icon: '👔', description: '严谨、专业的教学风格' },
-  { value: 'casual', label: '轻松随和', icon: '😊', description: '友好、轻松的交流方式' },
-  { value: 'encouraging', label: '鼓励支持', icon: '💪', description: '积极、鼓励的引导风格' }
-]
 
 const promptTemplates = [
   {
@@ -376,48 +350,6 @@ const handleSave = () => {
   border-color: #1f2937;
 }
 
-.tone-selector {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-}
-
-.tone-option {
-  padding: 12px;
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s;
-  text-align: center;
-}
-
-.tone-option:hover {
-  border-color: #4a90e2;
-  background: #f9fafb;
-}
-
-.tone-option.selected {
-  border-color: #4a90e2;
-  background: #eff6ff;
-}
-
-.tone-icon {
-  font-size: 24px;
-  margin-bottom: 8px;
-}
-
-.tone-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: #1f2937;
-  margin-bottom: 4px;
-}
-
-.tone-desc {
-  font-size: 11px;
-  color: #6b7280;
-}
-
 .template-buttons {
   display: flex;
   gap: 8px;
@@ -486,10 +418,6 @@ const handleSave = () => {
   }
 
   .form-row {
-    grid-template-columns: 1fr;
-  }
-
-  .tone-selector {
     grid-template-columns: 1fr;
   }
 

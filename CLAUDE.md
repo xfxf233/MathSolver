@@ -49,8 +49,8 @@ The app follows a component-based architecture with composables for shared logic
 - `ConversationPanel.vue` - Main chat interface managing conversation display, new conversation creation, conversation list, smart scrolling with quick navigation buttons, and AI persona switching confirmation
 - `MessageBubble.vue` - Individual message display component with copy/delete actions, renders both user and AI messages with Markdown + KaTeX support, includes collapsible reasoning section for AI thinking process, displays custom user nickname and AI persona nickname with color-coded borders, supports adjustable opacity for transparency effect
 - `ConversationList.vue` - Sidebar for viewing and switching between conversations, includes semi-transparent overlay that closes the sidebar when clicked outside
-- `SettingsDialog.vue` - Configuration dialog for user settings (nickname, background image, background opacity, message opacity), AI persona settings (select/create/edit/delete personas), and API settings, organized in sections, can only be closed via close button or cancel/save buttons (not by clicking outside)
-- `PersonaEditor.vue` - Dialog for creating and editing AI personas with customizable name, nickname, avatar, color, tone (formal/casual/encouraging), and system prompt, includes preset templates for quick setup
+- `SettingsDialog.vue` - Configuration dialog for user settings (nickname, background image, background opacity, message opacity), AI persona settings (select/create/edit/delete personas), API settings, and data management (clear all data), organized in sections, can only be closed via close button or cancel/save buttons (not by clicking outside)
+- `PersonaEditor.vue` - Dialog for creating and editing AI personas with customizable name, nickname, avatar, color, and system prompt, includes preset templates for quick setup
 - `PersonaSwitcher.vue` - Confirmation dialog shown when switching AI personas with an active conversation, offers options to apply to current conversation or only new conversations
 - `ImageCropper.vue` - Interactive image cropper for adjusting background images with drag, zoom, and reset functionality
 - `ResizeDivider.vue` - Draggable divider supporting both horizontal (desktop) and vertical (mobile) directions, with mouse and touch event support for adjusting panel sizes
@@ -333,8 +333,7 @@ Each persona contains:
 - `nickname` - Short name shown in message bubbles (e.g., 'AI助手')
 - `avatar` - Emoji or character representing the persona (e.g., '🎓')
 - `color` - Theme color for message bubble borders (e.g., '#4a90e2')
-- `tone` - Communication style: 'formal' (正式专业), 'casual' (轻松随和), or 'encouraging' (鼓励支持)
-- `systemPrompt` - Custom system prompt that defines AI behavior
+- `systemPrompt` - Custom system prompt that defines AI behavior and communication style
 - `isCustom` - Boolean indicating if it's a user-created persona
 
 **Default Personas:**
@@ -351,8 +350,9 @@ Each persona contains:
 
 **PersonaEditor Component:**
 - Full-featured dialog for creating/editing personas
-- Form fields: name, nickname, avatar (emoji picker), color (color picker), tone selector
+- Form fields: name, nickname, avatar (emoji picker), color (color picker)
 - System prompt editor with preset templates for quick setup
+- Communication style is now defined entirely through the system prompt for maximum flexibility
 - Responsive design for mobile and desktop
 - Validation to ensure all required fields are filled
 
@@ -375,6 +375,30 @@ Each persona contains:
 - Preset personas cannot be deleted or modified
 - Custom personas persist across sessions
 - Backward compatibility: old conversations default to 'math-tutor' persona
+
+### Data Management
+
+The application provides a data management feature in the settings dialog to clear all locally stored data.
+
+**Clear All Data Feature:**
+- Located in the "数据管理" (Data Management) section of settings dialog
+- Provides a red "清除所有数据" (Clear All Data) button with clear warning text
+- Shows a confirmation dialog before executing the operation
+- Confirmation dialog lists all data that will be cleared:
+  - All conversation records
+  - User settings (nickname, background images, etc.)
+  - Custom AI personas
+  - API configuration
+  - Interface layout settings
+- Clears the following localStorage keys:
+  - `mathsolver_settings`
+  - `mathsolver_conversations`
+  - `mathsolver_active_conversation_id`
+  - `mathsolver_layout_width`
+  - `mathsolver_mobile_height`
+- After clearing data, automatically refreshes the page to reinitialize the application with default settings
+- **Important**: This operation is irreversible and cannot be undone
+- Use case: Reset application to factory defaults, clear sensitive data, or troubleshoot issues
 
 ### Error Handling
 - API errors parsed into user-friendly messages

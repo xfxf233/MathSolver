@@ -38,6 +38,9 @@ const tempImageUrl = ref('')
 const showPersonaEditor = ref(false)
 const editingPersona = ref(null)
 
+// Clear data confirmation state
+const showClearDataConfirm = ref(false)
+
 // Persona computed properties
 const allPersonas = computed(() => getAllPersonas())
 const selectedPersona = computed(() =>
@@ -71,13 +74,31 @@ const handlePersonaCancel = () => {
   editingPersona.value = null
 }
 
-const getToneLabel = (tone) => {
-  const labels = {
-    formal: '正式专业',
-    casual: '轻松随和',
-    encouraging: '鼓励支持'
-  }
-  return labels[tone] || tone
+// 清除所有数据
+const handleClearData = () => {
+  showClearDataConfirm.value = true
+}
+
+const confirmClearData = () => {
+  // 清除所有 localStorage 数据
+  const keysToRemove = [
+    'mathsolver_settings',
+    'mathsolver_conversations',
+    'mathsolver_active_conversation_id',
+    'mathsolver_layout_width',
+    'mathsolver_mobile_height'
+  ]
+
+  keysToRemove.forEach(key => {
+    localStorage.removeItem(key)
+  })
+
+  // 刷新页面，让应用重新初始化
+  window.location.reload()
+}
+
+const cancelClearData = () => {
+  showClearDataConfirm.value = false
 }
 
 // 计算裁剪框尺寸（考虑裁剪对话框的各种元素占用空间）
@@ -393,11 +414,6 @@ const handleClose = () => {
             </div>
 
             <div class="detail-item">
-              <span class="detail-label">风格:</span>
-              <span class="detail-value">{{ getToneLabel(selectedPersona.tone) }}</span>
-            </div>
-
-            <div class="detail-item">
               <span class="detail-label">系统提示词:</span>
               <div class="detail-prompt">{{ selectedPersona.systemPrompt }}</div>
             </div>
@@ -481,6 +497,25 @@ const handleClose = () => {
           </div>
         </div>
 
+        <!-- 数据管理分组 -->
+        <div class="settings-section">
+          <h3 class="section-title">数据管理</h3>
+
+          <div class="form-group">
+            <label>清除所有数据</label>
+            <p class="form-hint" style="margin-bottom: 12px;">
+              清除所有本地存储的数据，包括设置、对话记录、AI形象等。此操作不可恢复。
+            </p>
+            <button
+              type="button"
+              class="button button-danger"
+              @click="handleClearData"
+            >
+              清除所有数据
+            </button>
+          </div>
+        </div>
+
         <div v-if="saveMessage" class="save-message" :class="{ success: saveMessage.includes('成功') }">
           {{ saveMessage }}
         </div>
@@ -503,6 +538,36 @@ const handleClose = () => {
       @save="handlePersonaSave"
       @cancel="handlePersonaCancel"
     />
+
+    <!-- 清除数据确认对话框 -->
+    <div v-if="showClearDataConfirm" class="confirm-overlay" @click.self="cancelClearData">
+      <div class="confirm-dialog">
+        <div class="confirm-header">
+          <h3>确认清除数据</h3>
+        </div>
+        <div class="confirm-body">
+          <p>⚠️ 此操作将清除以下所有数据：</p>
+          <ul>
+            <li>所有对话记录</li>
+            <li>用户设置（昵称、背景图片等）</li>
+            <li>自定义AI形象</li>
+            <li>API配置</li>
+            <li>界面布局设置</li>
+          </ul>
+          <p style="color: #ef4444; font-weight: 600; margin-top: 16px;">
+            此操作不可恢复，确定要继续吗？
+          </p>
+        </div>
+        <div class="confirm-actions">
+          <button type="button" class="button button-secondary" @click="cancelClearData">
+            取消
+          </button>
+          <button type="button" class="button button-danger" @click="confirmClearData">
+            确认清除
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -1028,6 +1093,81 @@ const handleClose = () => {
   line-height: 1.5;
   max-height: 120px;
   overflow-y: auto;
+}
+
+/* 确认对话框样式 */
+.confirm-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+  padding: 20px;
+}
+
+.confirm-dialog {
+  background: white;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.confirm-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.confirm-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.confirm-body {
+  padding: 24px;
+}
+
+.confirm-body p {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: #374151;
+  line-height: 1.6;
+}
+
+.confirm-body ul {
+  margin: 12px 0;
+  padding-left: 24px;
+  font-size: 14px;
+  color: #4b5563;
+  line-height: 1.8;
+}
+
+.confirm-body li {
+  margin: 4px 0;
+}
+
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.button-danger {
+  background: #ef4444;
+  color: white;
+}
+
+.button-danger:hover {
+  background: #dc2626;
 }
 
 @media (max-width: 640px) {
