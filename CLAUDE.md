@@ -65,8 +65,8 @@ The app follows a component-based architecture with composables for shared logic
   - `user`: { nickname: '你', backgroundImage: '', backgroundOpacity: 0.3, messageOpacity: 0.95 }
   - `personas`: { activePersonaId: 'math-tutor', presets: [...], custom: [...] }
   - `api`: { endpoint, apiKey, model, temperature, maxTokens }
-- Default API endpoint: `https://api.openai.com/v1/chat/completions`
-- Default model: `gpt-4o-mini`
+- Default API endpoint: `https://api.deepseek.com/v1/chat/completions`
+- Default model: `deepseek-chat`
 - Persona management functions:
   - `initializeDefaultPersonas()` - Initializes two default personas (数学导师, 学习伙伴)
   - `getActivePersona()` - Returns currently active persona object
@@ -82,7 +82,7 @@ The app follows a component-based architecture with composables for shared logic
 - Stores up to 50 conversations in localStorage under key `mathsolver_conversations`
 - Each conversation contains: id, title, messages array, personaId, model, createdAt, updatedAt
 - Each message contains: id, role (user/assistant), content, reasoning (optional), timestamp
-- The `reasoning` field stores AI model's thinking process (for models like o1/o3)
+- The `reasoning` field stores AI model's thinking process (for models like deepseek-reasoner)
 - The `personaId` field links conversation to the AI persona used
 - Provides CRUD operations: createConversation, deleteConversation, setActiveConversation
 - Message operations: addUserMessage, addAssistantMessage, updateAssistantMessage, deleteMessage

@@ -1,5 +1,9 @@
 # MathSolver - AI数学解题网站
 
+<div align="center">
+  <img src="assets/MathSolver.png" alt="MathSolver Logo" width="200"/>
+</div>
+
 一个纯前端的AI数学解题网站，支持数学公式输入和多轮对话式AI智能解答。
 
 ## 功能特性
@@ -10,13 +14,15 @@
 - **对话管理**: 创建多个对话线程，随时切换，每个对话独立保存
 - **AI智能解答**: 调用AI API进行数学问题求解，支持流式输出（打字机效果）
 - **AI形象系统**: 自定义AI助手的形象、昵称、颜色和系统提示词，支持创建多个AI形象
-- **思考过程展示**: 支持显示AI模型的思考过程（适用于o1/o3等推理模型），可折叠查看
+- **思考过程展示**: 支持显示AI模型的思考过程（适用于deepseek-reasoner等推理模型），可折叠查看
 - **Markdown+LaTeX渲染**: 完美支持Markdown文本和LaTeX数学公式混合渲染
 - **消息操作**: 复制单条AI回答，删除不需要的消息
 - **对话历史**: 自动保存所有对话，支持查看、切换和删除
 - **API配置**: 支持自定义API端点，兼容OpenAI格式的API
 
 ### 界面特性
+![电脑端界面展示](assets/电脑端界面展示.png)
+![手机端界面展示](assets/手机端界面展示.png)
 - **聊天式界面**: 类似聊天应用的对话界面，用户消息和AI回答清晰区分
 - **响应式布局**:
   - 桌面端：左右分栏布局，可拖动分隔条调整宽度
@@ -72,9 +78,9 @@ npm run build
 
 1. 点击右上角的齿轮图标打开设置
 2. 在"API设置"部分填写以下信息：
-   - **API端点**: 例如 `https://api.openai.com/v1/chat/completions`
+   - **API端点**: 例如 `https://api.deepseek.com/v1/chat/completions`
    - **API密钥**: 你的API密钥（如 `sk-...`）
-   - **模型名称**: 例如 `gpt-4o-mini`、`gpt-4`、`claude-3-5-sonnet` 等
+   - **模型名称**: 例如 `deepseek-chat`、`deepseek-reasoner`等
 3. （可选）展开高级选项，调整温度和最大Token数
 4. 点击"保存"
 
@@ -104,7 +110,7 @@ npm run build
    - 使用裁剪工具调整图片位置和缩放
    - 支持JPG、PNG、GIF格式，最大5MB
 3. **背景透明度**: 调整背景图片的透明度（0-100%）
-4. **消息透明度**: 调整消息气泡的透明度（50-100%），让背景图片若隐若现
+4. **消息透明度**: 调整消息气泡的透明度（50-100%）
 
 ### 4. 输入消息
 
@@ -118,7 +124,7 @@ npm run build
 ### 5. 对话交互
 
 1. 发送消息后，AI将开始思考并逐字显示解答过程
-2. **思考过程展示**（仅支持推理模型如o1/o3）：
+2. **思考过程展示**（仅支持推理模型如deepseek-reasoner）：
    - AI思考时会实时显示思考过程，默认展开
    - 点击"思考过程"标题可以折叠/展开该区域
    - 思考完成后会显示最终回答
@@ -175,12 +181,7 @@ src/
 
 ## API格式说明
 
-本应用支持任何兼容OpenAI格式的API端点，包括：
-
-- OpenAI官方API
-- Claude API（通过兼容层）
-- 本地部署的模型（如Ollama、LM Studio等）
-- 第三方API服务
+本应用支持任何兼容OpenAI格式的API端点。
 
 ### 请求格式
 
@@ -188,7 +189,7 @@ src/
 
 ```json
 {
-  "model": "gpt-4o-mini",
+  "model": "deepseek-chat",
   "messages": [
     {
       "role": "system",
@@ -219,7 +220,7 @@ AI应返回Markdown格式的文本，数学公式使用LaTeX语法：
 - 行内公式：`$x^2 + y^2 = r^2$`
 - 块级公式：`$$\int_0^1 x^2 dx$$`
 
-**推理模型支持**（如OpenAI o1/o3）：
+**推理模型支持**（如deepseek-reasoner）：
 - 支持 `reasoning_content` 或 `reasoning` 字段
 - 思考过程会在界面上单独显示，可折叠查看
 - 不支持该字段的模型不受影响，正常显示回答内容
@@ -228,22 +229,15 @@ AI应返回Markdown格式的文本，数学公式使用LaTeX语法：
 
 ### 1. API请求失败
 
-- 检查API端点是否正确
+- 检查API端点是否正确（需要完整的，后面跟v1/chat/completions）
 - 检查API密钥是否有效
 - 检查网络连接
 - 查看浏览器控制台的错误信息
 
-### 2. 公式渲染异常
-
-- 确保LaTeX语法正确
-- 检查是否使用了不支持的LaTeX命令
-- 尝试刷新页面
-
-### 3. 对话历史丢失
+### 2. 对话历史丢失
 
 - 对话历史存储在浏览器localStorage中
 - 清除浏览器数据会导致对话历史丢失
-- 建议定期导出重要的对话内容
 - 最多保存50个对话，超出后会自动删除最旧的对话
 
 ## 开发说明
@@ -263,10 +257,4 @@ hljs.registerLanguage('newLanguage', newLanguage)
 - **AI形象**: 编辑 `src/composables/useSettings.js` 中的 `DEFAULT_PERSONAS`
 - **Markdown渲染**: 修改 `src/composables/useMarkdownRenderer.js` 中的 `MarkdownIt` 配置
 
-## 许可证
-
-MIT License
-
-## 贡献
-
-欢迎提交Issue和Pull Request！
+**注意**: 目前没做版本迁移，如果使用应用后修改默认配置则不会生效。

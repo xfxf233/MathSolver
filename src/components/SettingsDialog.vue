@@ -457,7 +457,7 @@ const handleClose = () => {
               placeholder="gpt-4o-mini"
               required
             />
-            <span class="form-hint">例如: gpt-4o-mini, gpt-4, claude-3-5-sonnet等</span>
+            <span class="form-hint">例如: deepseek-chat, deepseek-reasoner等</span>
           </div>
 
           <button

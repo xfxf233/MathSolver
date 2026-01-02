@@ -62,9 +62,9 @@ const settings = ref({
   },
   // API 设置
   api: {
-    endpoint: 'https://api.openai.com/v1/chat/completions',
+    endpoint: 'https://api.deepseek.com/v1/chat/completions',
     apiKey: '',
-    model: 'gpt-4o-mini',
+    model: 'deepseek-chat',
     temperature: 0.7,
     maxTokens: 2000
   },
@@ -128,9 +128,9 @@ const resetSettings = () => {
       messageOpacity: 0.95
     },
     api: {
-      endpoint: 'https://api.openai.com/v1/chat/completions',
+      endpoint: 'https://api.deepseek.com/v1/chat/completions',
       apiKey: '',
-      model: 'gpt-4o-mini',
+      model: 'deepseek-chat',
       temperature: 0.7,
       maxTokens: 2000
     },
