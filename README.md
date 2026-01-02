@@ -258,3 +258,11 @@ hljs.registerLanguage('newLanguage', newLanguage)
 - **Markdown渲染**: 修改 `src/composables/useMarkdownRenderer.js` 中的 `MarkdownIt` 配置
 
 **注意**: 目前没做版本迁移，如果使用应用后修改默认配置则不会生效。
+
+## 许可证
+
+MIT License
+
+## 贡献
+
+欢迎提交Issue和Pull Request！
